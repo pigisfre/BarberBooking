@@ -41,6 +41,8 @@ export interface Busy {
   staffId: string | null; // null = vale per tutto il salone (chiusura)
   start: Date;
   end: Date;
+  /** per "primo disponibile" contano solo gli appuntamenti, non le pause (come get_available_slots) */
+  kind?: 'appointment' | 'block';
 }
 
 export interface BookingRules {
@@ -149,7 +151,9 @@ export function availableSlots(data: SlotData, q: SlotQuery): Slot[] {
   for (const s of staff) {
     load.set(
       s.id,
-      data.busy.filter((b) => b.staffId === s.id && localDateOf(b.start, data.rules.timeZone) === q.date).length,
+      data.busy.filter(
+        (b) => b.kind !== 'block' && b.staffId === s.id && localDateOf(b.start, data.rules.timeZone) === q.date,
+      ).length,
     );
   }
   const byStart = new Map<number, Slot>();

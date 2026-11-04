@@ -32,15 +32,17 @@ pnpm dev:server
 Lascia girare il backend finto (porta 8787), poi in altri due terminali:
 
 ```bash
-pnpm client
+EXPO_PUBLIC_BACKEND=fake pnpm client
 ```
 
 ```bash
-pnpm business
+EXPO_PUBLIC_BACKEND=fake pnpm business
 ```
 
+Senza `EXPO_PUBLIC_BACKEND=fake` le app usano Supabase (URL e chiave pubblica in `brands/demo/brand.json`): vedi "Demo su Supabase".
+
 - App Cliente: http://localhost:8081
-- Gestionale: http://localhost:8082, accesso con `titolare@demo.test`
+- Gestionale: http://localhost:8082, accesso con le credenziali demo mostrate nella pagina
 
 Su telefono (Expo Go o development build) imposta `EXPO_PUBLIC_FAKE_URL=http://<ip-del-computer>:8787`, perché `localhost` sul telefono è il telefono stesso.
 
@@ -55,10 +57,24 @@ pnpm typecheck
 ```
 
 ```bash
-pnpm export:web && node e2e/slice.mjs
+pnpm test:db
 ```
 
-Schema del database: vedi l'intestazione di `replica/test/schema.test.sql`.
+(test del database su un Postgres locale: usa `PGHOST`/`PGPORT`/`PGUSER`)
+
+```bash
+pnpm e2e
+```
+
+## Demo su Supabase (piano gratuito)
+
+1. Nel progetto Supabase apri **SQL Editor**, incolla tutto `supabase/demo-setup.sql` e premi **Run**. Crea tabelle, regole e dati demo.
+2. **Authentication → Sign In / Providers**: attiva **Allow anonymous sign-ins** (serve ai clienti della demo).
+3. **Authentication → Users → Add user → Create new user**: email `titolare@barberbooking.demo`, la password che preferisci, spunta **Auto Confirm User**. Se cambi email o password, aggiornale in `brands/demo/brand.json` alla voce `demo`.
+4. Di nuovo nello **SQL Editor**: esegui `supabase/demo-staff.sql`, che deve rispondere `ok: titolare collegato`.
+5. Avvia le app (`pnpm client`, `pnpm business`) e prova a prenotare e a entrare nel gestionale.
+
+Per rimettere i dati demo come nuovi, riesegui solo `supabase/seed.sql`. Il progetto gratuito va in pausa dopo circa una settimana senza visite: si riattiva dalla dashboard.
 
 ## Un nuovo barbiere
 

@@ -114,7 +114,7 @@ export function useSignInStaff() {
   const d = useData();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (i: { email: string }) => d.signInStaff(i),
+    mutationFn: (i: { email: string; password?: string }) => d.signInStaff(i),
     onSuccess: (s) => qc.setQueryData(keys.session, s),
   });
 }
@@ -126,6 +126,12 @@ export function useSignOut() {
     onSuccess: () => qc.clear(),
   });
 }
+export function useDeleteAccount() {
+  const d = useData();
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => d.deleteMyAccount(), onSuccess: () => qc.clear() });
+}
+
 export function useCancel() {
   const d = useData();
   const qc = useQueryClient();

@@ -2,7 +2,7 @@
  * L'unico modo in cui le schermate parlano col backend.
  * Due implementazioni con la stessa firma:
  *  - fake (adesso): server locale in memoria con dati di prova, vedi src/fake/
- *  - supabase (replica-backend): RLS + RPC book_appointment + Edge Function availability
+ *  - supabase: RLS + RPC (get_available_slots, book_appointment, cancel_appointment, day_stats), vedi src/supabase/
  * Cambiare implementazione non deve toccare il codice delle schermate.
  */
 import type { LocalDate } from '@bb/core';
@@ -32,7 +32,8 @@ export interface DataLayer {
   // sessione (finta finche non c'e Supabase Auth)
   getSession(): Promise<Session | null>;
   signInCustomer(input: { name: string; phone: string }): Promise<Session>;
-  signInStaff(input: { email: string }): Promise<Session>;
+  /** Il backend finto ignora la password. */
+  signInStaff(input: { email: string; password?: string }): Promise<Session>;
   signOut(): Promise<void>;
 
   // cliente loggato o staff
@@ -40,6 +41,8 @@ export interface DataLayer {
   bookAppointment(input: BookInput): Promise<{ id: string }>;
   listMyAppointments(): Promise<Appointment[]>;
   cancelAppointment(id: string): Promise<void>;
+  /** Elimina l'account del cliente (la scheda del salone resta, anonima). */
+  deleteMyAccount(): Promise<void>;
 
   // staff
   listAppointments(q: { from: string; to: string }): Promise<Appointment[]>;

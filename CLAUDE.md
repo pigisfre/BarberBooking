@@ -16,7 +16,9 @@ App di prenotazione per barbieri: **app Cliente** + **gestionale del barbiere**,
 
 - `replica/recon.md`, `replica/features.csv`: ricognizione e matrice delle funzioni (ID schermate S01..., flussi F01...).
 - `replica/architecture.md`: stack, API, job, rischi, ordine di costruzione.
-- `replica/schema.sql`: schema del database. Si testa con `replica/test/` (vedi l'intestazione di `schema.test.sql`); ogni modifica allo schema deve far passare i test.
+- `supabase/migrations/`: schema del database. Si testa con `pnpm test:db` (Postgres locale, vedi `supabase/tests/run.sh`); ogni modifica allo schema deve far passare i test e va rigenerato `supabase/demo-setup.sql` (`pnpm demo-sql`).
+- `replica/backend.md`: stato del backend, cosa è verificato e cosa no, checklist di sicurezza.
+- Demo da portfolio: Supabase Free; clienti con accesso anonimo + nome e telefono; il telefono NON verificato non deve mai dare accesso a dati esistenti.
 - `.claude/skills/`: skill Replica (`replica-*`) e `apple-design`.
 
 ## Flusso di lavoro

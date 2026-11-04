@@ -28,6 +28,7 @@ export function startFakeServer(port = Number(process.env.FAKE_PORT ?? 8787)) {
     bookAppointment: (u, a) => store.book(u, a, new Date()),
     listMyAppointments: (u) => store.myAppointments(u),
     cancelAppointment: (u, a) => store.cancel(u, String(a.id), new Date()),
+    deleteMyAccount: (u) => store.deleteAccount(u, new Date()),
     listAppointments: (u, a) => (store.requireStaff(u), store.appointmentsBetween(a.from, a.to)),
     listTimeBlocks: (u, a) => (store.requireStaff(u), store.blocksBetween(a.from, a.to)),
     getDayStats: (u, a) => (store.requireStaff(u), store.dayStats(a.date)),

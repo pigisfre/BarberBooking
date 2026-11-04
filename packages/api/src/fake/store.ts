@@ -46,6 +46,8 @@ interface Profile {
   name: string;
   phone: string | null;
   email: string | null;
+  /** come auth.users.phone_confirmed_at: solo un telefono verificato aggancia una scheda esistente */
+  phoneVerified: boolean;
 }
 
 export interface StoreState {
@@ -91,8 +93,8 @@ export class FakeStore {
       busy: [
         ...s.appointments
           .filter((a) => ACTIVE.has(a.status))
-          .map((a) => ({ staffId: a.staffId, start: new Date(a.startAt), end: new Date(a.endAt) })),
-        ...s.blocks.map((b) => ({ staffId: b.staffId, start: new Date(b.startAt), end: new Date(b.endAt) })),
+          .map((a) => ({ staffId: a.staffId, start: new Date(a.startAt), end: new Date(a.endAt), kind: 'appointment' as const })),
+        ...s.blocks.map((b) => ({ staffId: b.staffId, start: new Date(b.startAt), end: new Date(b.endAt), kind: 'block' as const })),
       ],
     };
   }
@@ -127,11 +129,12 @@ export class FakeStore {
   }
 
   // ------------------------------------------------------------------ auth finta
-  signInCustomer(name: string, phone: string): Session {
+  /** Accesso finto. `verified` simula un telefono confermato con OTP (il server di sviluppo non lo fa mai). */
+  signInCustomer(name: string, phone: string, verified = false): Session {
     const normalized = phone.replace(/[^\d+]/g, '');
     let p = this.state.profiles.find((x) => x.phone === normalized);
     if (!p) {
-      p = { id: newId('usr'), name: name.trim(), phone: normalized, email: null };
+      p = { id: newId('usr'), name: name.trim(), phone: normalized, email: null, phoneVerified: verified };
       this.state.profiles.push(p);
     }
     return this.session(p.id)!;
@@ -216,13 +219,16 @@ export class FakeStore {
     return { id: appt.id };
   }
 
-  /** Come nel database: scheda gia collegata, oppure stessa scheda per telefono, oppure nuova. */
+  /** Come nel database: scheda gia collegata, oppure stessa scheda per telefono VERIFICATO, oppure nuova. */
   private customerForProfile(userId: string): Customer {
     const s = this.state;
     const linked = s.customers.find((c) => c.profileId === userId);
     if (linked) return linked;
     const p = s.profiles.find((x) => x.id === userId)!;
-    const byPhone = s.customers.find((c) => c.profileId === null && c.phone && c.phone === p.phone);
+    const digits = (x: string | null) => (x ?? '').replace(/\D/g, '');
+    const byPhone = p.phoneVerified
+      ? s.customers.find((c) => c.profileId === null && digits(c.phone) !== '' && digits(c.phone) === digits(p.phone))
+      : undefined;
     if (byPhone) {
       byPhone.profileId = userId;
       return byPhone;
@@ -251,6 +257,21 @@ export class FakeStore {
       }
     }
     a.status = 'cancelled';
+  }
+
+  /** Come delete_my_account(): via il profilo, scheda anonima, appuntamenti futuri annullati. */
+  deleteAccount(userId: string | null, now: Date): void {
+    if (!userId) throw new BookingError('auth_required');
+    if (this.isStaff(userId)) throw new BookingError('forbidden');
+    const s = this.state;
+    for (const c of s.customers.filter((x) => x.profileId === userId)) {
+      for (const a of s.appointments) {
+        if (a.customerId === c.id && ACTIVE.has(a.status) && new Date(a.startAt) > now) a.status = 'cancelled';
+        if (a.customerId === c.id) a.customerName = 'Cliente eliminato';
+      }
+      Object.assign(c, { fullName: 'Cliente eliminato', phone: null, profileId: null });
+    }
+    s.profiles = s.profiles.filter((p) => p.id !== userId);
   }
 
   // ------------------------------------------------------------------ staff

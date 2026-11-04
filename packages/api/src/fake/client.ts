@@ -69,6 +69,10 @@ export function createFakeDataLayer(opts: { baseUrl: string; storage: TokenStora
     bookAppointment: (i) => rpc('bookAppointment', i),
     listMyAppointments: () => rpc('listMyAppointments'),
     cancelAppointment: (id) => rpc('cancelAppointment', { id }),
+    deleteMyAccount: async () => {
+      await rpc('deleteMyAccount');
+      storage.set(null);
+    },
     listAppointments: (q) => rpc('listAppointments', q),
     listTimeBlocks: (q) => rpc('listTimeBlocks', q),
     getDayStats: (date) => rpc('getDayStats', { date }),

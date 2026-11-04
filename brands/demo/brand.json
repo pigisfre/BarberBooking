@@ -34,9 +34,8 @@
     "ogImage": "assets/og-1200x630.png"
   },
   "backend": {
-    "supabaseUrl": null,
-    "supabaseAnonKey": null,
-    "sentryDsn": null,
+    "supabaseUrl": "https://egtoooukufqcaxbbnxnh.supabase.co",
+    "supabaseAnonKey": "sb_publishable_M3ETN1nKb_zaHhCOSaVCkw_PMgGVDpc",
     "fakeServerUrl": "http://localhost:8787"
   },
   "legal": {
@@ -60,5 +59,10 @@
   "stores": {
     "appleTeamId": null,
     "googlePlayAccount": null
+  },
+  "demo": {
+    "_about": "Credenziali dell'account demo del titolare, mostrate nella pagina di accesso del gestionale. Solo per la demo da portfolio: l'account non ha accesso a nulla di reale.",
+    "staffEmail": "titolare@barberbooking.demo",
+    "staffPassword": "DemoBarber2026!"
   }
 }

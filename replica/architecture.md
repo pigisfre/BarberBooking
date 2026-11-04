@@ -119,7 +119,7 @@ Le operazioni CRUD semplici passano dal client Supabase con RLS (marcate **RLS**
 | Auth email / Apple / Google | accesso | pubblico / staff | | sessione | F01, F07 |
 | `GET salon` **RLS** | dati del salone (home dell'app) | pubblico | | salone | F01, F02 |
 | `GET services, service_categories, staff_members, service_staff` **RLS** | catalogo | pubblico | | liste | F01, F02 |
-| `POST fn/availability` | slot liberi per giorno, o i primi giorni liberi | pubblico, rate limit | service_ids, staff_id o "qualsiasi", date | `[{start, staff_id}]` | F01, F02, F03, F07 |
+| `RPC get_available_slots` | slot liberi del giorno (in SQL, security definer: restituisce solo gli slot) | pubblico | service_ids, staff_id o null = qualsiasi, giorno | `[{start_at, end_at, staff_id}]` | F01, F02, F03, F07 |
 | `RPC book_appointment` | prenota in modo atomico | cliente loggato o staff | staff, services, start, customer?, source, note, idempotency_key | appointment_id o codice errore | F01, F02, F07 |
 | `RPC cancel_appointment` | annulla entro la finestra (cliente) o sempre (staff) | cliente proprietario o staff | id | ok o `outside_window` | F03 |
 | `RPC reschedule_appointment` | sposta in modo atomico | cliente proprietario o staff | id, nuovo start, staff? | id | F03 |
@@ -130,8 +130,8 @@ Le operazioni CRUD semplici passano dal client Supabase con RLS (marcate **RLS**
 | `PATCH salon` **RLS** | profilo e regole di prenotazione | owner/admin | | | F06 |
 | `POST fn/invite-staff` | invita un collaboratore via email | owner | email, role | | F06 |
 | `POST fn/register-push` | salva il token Expo | loggato | token, app, platform | | F05 |
-| `POST fn/delete-account` | cancella il profilo e anonimizza la scheda | loggato | | | GDPR / Apple |
-| `GET fn/dashboard` | KPI di oggi e della settimana per S22 | staff | data | numeri | F09 |
+| `RPC delete_my_account` | elimina l'utente di Auth, anonimizza la scheda, annulla i futuri | cliente loggato | | | GDPR / Apple |
+| `RPC day_stats` | KPI di oggi per S22 | staff | giorno | json | F09 |
 
 Webhooks in:
 - `fn/whatsapp-webhook` (verifica la firma di Meta): aggiorna lo stato in `message_log` e gestisce il pulsante "Annulla" del template.
@@ -168,7 +168,7 @@ Solo API ufficiali, con chiavi tue o del barbiere: Supabase, Meta WhatsApp Cloud
 - **Fusi orari e ora legale:** orari in ora locale del salone; slot calcolati in `packages/core` con `Temporal` / `date-fns-tz`. I giorni del cambio d'ora (23 o 25 ore) hanno test dedicati.
 - **Idempotenza:** `idempotency_key` sulle prenotazioni, `reminder_sent_at`, `webhook_events`.
 - **Concorrenza:** lock per operatore + vincolo di esclusione. L'app gestisce `slot_unavailable` ricaricando gli slot.
-- **Calcolo slot:** nella Edge Function, così pause e appuntamenti altrui non arrivano mai al client.
+- **Calcolo slot:** in SQL (`get_available_slots`, security definer), così pause e appuntamenti altrui non arrivano mai al client; la stessa logica è in `packages/core` per il backend finto (testate entrambe sugli stessi casi).
 - **SMS OTP:** costano e attirano abusi. Servono rate limit, captcha sul web e solo numeri italiani all'inizio.
 - **GDPR:**
   - il barbiere è titolare dei dati e tu sei responsabile del trattamento: serve un contratto ex art. 28 con ogni cliente;

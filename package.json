@@ -9,6 +9,9 @@
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "tokens": "python3 replica/design/build_tokens.py",
-    "export:web": "pnpm -r --if-present export:web"
+    "export:web": "pnpm -r --if-present export:web",
+    "e2e": "EXPO_PUBLIC_BACKEND=fake pnpm -r --if-present export:web && node e2e/slice.mjs",
+    "test:db": "bash supabase/tests/run.sh",
+    "demo-sql": "node supabase/build-demo-sql.mjs"
   }
 }

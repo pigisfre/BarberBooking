@@ -1,4 +1,5 @@
--- BarberBooking: schema MVP (Supabase / Postgres 15+)
+-- BarberBooking: schema MVP (Supabase / Postgres 15+). Migrazione iniziale.
+-- Test: supabase/tests (vedi l'intestazione di schema.test.sql).
 -- SINGLE-TENANT: ogni installazione (un progetto Supabase) serve UN solo salone,
 -- personalizzato per quel barbiere. Niente tenant_id: il salone e la riga unica di `salon`.
 -- Accesso con Row Level Security. Tempi sempre timestamptz (UTC). Soldi in centesimi interi.
@@ -22,7 +23,7 @@ end $$;
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
-  phone text unique,                       -- E.164, verificato con OTP
+  phone text,                              -- E.164; NON verificato (lo scrive l'utente): mai usarlo per dare accesso
   email citext unique,
   locale text not null default 'it',
   created_at timestamptz not null default now(),
@@ -87,7 +88,7 @@ create table staff_members (
   user_id uuid unique references staff_users(user_id) on delete set null,
   display_name text not null,
   avatar_path text,
-  color text,                              -- colore della colonna in agenda
+  color text not null default '1' check (color in ('1','2','3','4','5','6')), -- token staff-N dell'agenda
   sort_order int not null default 0,
   bookable_online boolean not null default true,
   active boolean not null default true,
@@ -164,7 +165,7 @@ create table customers (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid unique references profiles(id) on delete set null,
   full_name text not null,
-  phone text unique,
+  phone text,                              -- non unico: due schede possono avere lo stesso numero
   email citext,
   birthday date,
   notes text,
@@ -175,6 +176,7 @@ create table customers (
   updated_at timestamptz not null default now()
 );
 create index customers_name_idx on customers (full_name);
+create index customers_phone_idx on customers (phone);
 
 create table appointments (
   id uuid primary key default gen_random_uuid(),
@@ -308,14 +310,19 @@ begin
     if p_start_at > now() + make_interval(days => v_salon.max_advance_days) then
       raise exception 'too_far';
     end if;
-    -- il cliente app prenota sempre per se stesso; se il barbiere lo aveva gia in rubrica
-    -- con lo stesso telefono, la scheda viene collegata al profilo
+    -- il cliente app prenota sempre per se stesso. Se il barbiere lo aveva gia in rubrica
+    -- con lo stesso telefono, la scheda si collega al profilo, MA solo se il telefono e
+    -- verificato da Supabase Auth (OTP): altrimenti chiunque scrivendo un numero
+    -- vedrebbe lo storico di un altro.
     select id into v_customer from customers where profile_id = auth.uid();
     if v_customer is null then
-      update customers c set profile_id = p.id
-        from profiles p
-       where p.id = auth.uid() and c.phone = p.phone and c.profile_id is null
-      returning c.id into v_customer;
+      update customers set profile_id = auth.uid()
+       where id = (select c.id from customers c join auth.users u on u.id = auth.uid()
+                    where u.phone_confirmed_at is not null and coalesce(u.phone, '') <> ''
+                      and regexp_replace(c.phone, '\D', '', 'g') = regexp_replace(u.phone, '\D', '', 'g')
+                      and c.profile_id is null
+                    order by c.created_at limit 1)   -- piu schede con lo stesso numero: la piu vecchia
+      returning id into v_customer;
     end if;
     if v_customer is null then
       insert into customers (profile_id, full_name, phone, email)
@@ -449,6 +456,187 @@ create policy appt_services_self on appointment_services for select using (
 create policy push_self on push_tokens for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 create policy msg_staff on message_log for select using (is_staff());
+
+-- ---------------------------------------------------------------------------
+-- profilo creato in automatico per ogni utente di Supabase Auth (anche anonimo)
+-- ---------------------------------------------------------------------------
+create or replace function handle_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, phone)
+  values (new.id,
+          nullif(new.email, ''),
+          case when coalesce(new.phone, '') <> '' then '+' || ltrim(new.phone, '+') end)
+  on conflict (id) do nothing;
+  return new;
+end $$;
+
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function handle_new_user();
+
+-- ---------------------------------------------------------------------------
+-- orari liberi (F01, F02, F07). Stessa logica di packages/core/src/slots.ts.
+-- Security definer: chiunque puo chiederli, ma riceve SOLO gli slot, mai pause o appuntamenti altrui.
+-- p_staff_id null = "primo disponibile": uno slot per orario, all'operatore con meno appuntamenti quel giorno.
+-- ---------------------------------------------------------------------------
+create or replace function get_available_slots(p_service_ids uuid[], p_staff_id uuid, p_day date)
+returns table (start_at timestamptz, end_at timestamptz, staff_id uuid)
+language plpgsql stable security definer set search_path = public as $$
+#variable_conflict use_column
+declare
+  v_salon salon;
+  v_is_staff boolean := is_staff();
+  v_dur int;
+  v_n int;
+begin
+  select * into v_salon from salon limit 1;
+  if v_salon.id is null or (not v_is_staff and not v_salon.booking_enabled) then return; end if;
+  if coalesce(cardinality(p_service_ids), 0) = 0 then return; end if;
+
+  select count(*), sum(s.duration_min) into v_n, v_dur
+  from services s
+  where s.id = any(p_service_ids) and s.active and (v_is_staff or s.bookable_online);
+  if v_n <> cardinality(p_service_ids) then return; end if;
+
+  return query
+  with eligible as (
+    select st.id as sid, st.sort_order
+    from staff_members st
+    where st.active and (v_is_staff or st.bookable_online)
+      and (p_staff_id is null or st.id = p_staff_id)
+      and (select count(*) from service_staff ss
+           where ss.staff_id = st.id and ss.service_id = any(p_service_ids)) = cardinality(p_service_ids)
+  ),
+  cand as (
+    select e.sid, e.sort_order,
+           ((p_day + w.opens + make_interval(mins => g * v_salon.slot_interval_min)) at time zone v_salon.timezone) as s
+    from eligible e
+    join working_hours w on w.staff_id = e.sid and w.weekday = extract(isodow from p_day)
+    cross join lateral generate_series(
+      0, floor((extract(epoch from (w.closes - w.opens)) / 60 - v_dur) / v_salon.slot_interval_min)::int) g
+  ),
+  free as (
+    select c.sid, c.sort_order, c.s, c.s + make_interval(mins => v_dur) as e
+    from cand c
+    where (c.s at time zone v_salon.timezone)::date = p_day        -- ore inesistenti nel cambio d'ora
+      and (v_is_staff or (c.s >= now() + make_interval(mins => v_salon.min_notice_min)
+                          and c.s <= now() + make_interval(days => v_salon.max_advance_days)))
+      and not exists (select 1 from appointments a
+                      where a.staff_id = c.sid and a.status in ('pending','confirmed')
+                        and tstzrange(a.start_at, a.end_at) && tstzrange(c.s, c.s + make_interval(mins => v_dur)))
+      and not exists (select 1 from time_blocks b
+                      where (b.staff_id = c.sid or b.staff_id is null)
+                        and tstzrange(b.start_at, b.end_at) && tstzrange(c.s, c.s + make_interval(mins => v_dur)))
+  ),
+  load as (
+    select a.staff_id as sid, count(*) as n
+    from appointments a
+    where a.status in ('pending','confirmed') and (a.start_at at time zone v_salon.timezone)::date = p_day
+    group by a.staff_id
+  )
+  select distinct on (f.s) f.s, f.e, f.sid
+  from free f left join load l on l.sid = f.sid
+  order by f.s, coalesce(l.n, 0), f.sort_order;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- annullamento (F03): il cliente solo i propri e fuori dalla finestra; lo staff sempre
+-- ---------------------------------------------------------------------------
+create or replace function cancel_appointment(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  a appointments;
+  v_salon salon;
+begin
+  select * into a from appointments where id = p_id for update;
+  if a.id is null then raise exception 'forbidden'; end if;
+  if is_staff() then
+    update appointments set status = 'cancelled', cancelled_at = now(), cancelled_by = 'staff' where id = p_id;
+    return;
+  end if;
+  if not exists (select 1 from customers c where c.id = a.customer_id and c.profile_id = auth.uid()) then
+    raise exception 'forbidden';
+  end if;
+  if a.status not in ('pending','confirmed') then raise exception 'forbidden'; end if;
+  select * into v_salon from salon limit 1;
+  if a.start_at < now() + make_interval(mins => v_salon.cancel_window_min) then raise exception 'too_late'; end if;
+  update appointments set status = 'cancelled', cancelled_at = now(), cancelled_by = 'customer' where id = p_id;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- numeri della dashboard "Oggi" (S22), solo staff
+-- ---------------------------------------------------------------------------
+create or replace function day_stats(p_day date) returns json
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_tz text;
+  v_out json;
+begin
+  if not is_staff() then raise exception 'forbidden'; end if;
+  select timezone into v_tz from salon limit 1;
+  select json_build_object(
+    'date', p_day,
+    'appointments', count(*) filter (where d = p_day and status <> 'cancelled'),
+    'expectedCents', coalesce(sum(total_cents) filter (where d = p_day and status not in ('cancelled','no_show')), 0),
+    'noShowsThisMonth', count(*) filter (where status = 'no_show' and date_trunc('month', d) = date_trunc('month', p_day)),
+    'sameWeekdayLastWeek', count(*) filter (where d = p_day - 7 and status <> 'cancelled'))
+  into v_out
+  from (select status, total_cents, (start_at at time zone coalesce(v_tz, 'Europe/Rome'))::date as d
+        from appointments
+        where start_at >= (date_trunc('month', p_day) - interval '8 days')
+          and start_at < (p_day + 1)::timestamp + interval '1 day') x;
+  return v_out;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- cancellazione dell'account (GDPR, obbligatoria per Apple): elimina l'utente di Auth
+-- (e con lui profilo e token push); la scheda nella rubrica del barbiere resta per lo storico
+-- del salone ma senza dati personali; gli appuntamenti futuri vengono annullati.
+-- ---------------------------------------------------------------------------
+create or replace function delete_my_account() returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then raise exception 'auth_required'; end if;
+  if is_staff() then raise exception 'forbidden'; end if;   -- lo staff si rimuove dal titolare, non da qui
+  update appointments set status = 'cancelled', cancelled_at = now(), cancelled_by = 'customer'
+   where customer_id in (select id from customers where profile_id = v_uid)
+     and status in ('pending','confirmed') and start_at > now();
+  update customers set full_name = 'Cliente eliminato', phone = null, email = null, birthday = null,
+                       notes = null, marketing_consent = false, profile_id = null
+   where profile_id = v_uid;
+  delete from auth.users where id = v_uid;
+end $$;
+
+-- Permessi delle funzioni. In Postgres l'esecuzione e concessa a PUBLIC per default: la togliamo
+-- e la diamo solo a chi serve. Gli utenti "anonymous sign-in" di Supabase sono 'authenticated'.
+revoke execute on function book_appointment(uuid, uuid[], timestamptz, uuid, text, text, uuid) from public;
+revoke execute on function cancel_appointment(uuid) from public;
+revoke execute on function day_stats(date) from public;
+revoke execute on function get_available_slots(uuid[], uuid, date) from public;
+revoke execute on function handle_new_user() from public;
+revoke execute on function delete_my_account() from public;
+grant execute on function delete_my_account() to authenticated;
+grant execute on function book_appointment(uuid, uuid[], timestamptz, uuid, text, text, uuid) to authenticated;
+grant execute on function cancel_appointment(uuid) to authenticated;
+grant execute on function day_stats(date) to authenticated;
+grant execute on function get_available_slots(uuid[], uuid, date) to anon, authenticated;
+
+-- Accesso alle tabelle tramite la Data API. Supabase di solito lo concede da solo; lo rendiamo esplicito
+-- perche nei progetti nuovi l'esposizione automatica puo essere disattivata. Chi vede cosa lo decide la RLS.
+grant usage on schema public to anon, authenticated;
+grant select on all tables in schema public to anon;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+revoke all on webhook_events from anon, authenticated;
+
+-- agenda in tempo reale sul gestionale (solo su Supabase, dove la publication esiste)
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table appointments;
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- FASE 2 (non nel MVP): da scrivere come migrazioni successive

@@ -89,15 +89,22 @@ describe('prenotazione (come book_appointment)', () => {
     expect(errorOf(() => book(null, SEED_IDS.marco, ['svc_taglio'], at('11:15')))).toBe('auth_required');
   });
 
-  it('la scheda inserita dal barbiere si collega al cliente che si registra con lo stesso telefono', () => {
+  it('telefono verificato: la scheda inserita dal barbiere si collega al cliente', () => {
     const before = store.state.customers.length;
-    const u = store.signInCustomer('Ricky', '+39 333 000 0001').userId; // stesso numero di "Riccardo Bianchi" nel seed
+    const u = store.signInCustomer('Ricky', '+39 333 000 0001', true).userId; // stesso numero di "Riccardo Bianchi" nel seed
     book(u, SEED_IDS.marco, ['svc_taglio'], at('11:15'));
     expect(store.state.customers.length).toBe(before);
     const mine = store.myAppointments(u);
     expect(mine.map((a) => a.customerName)).toContain('Riccardo Bianchi');
     // vede anche gli appuntamenti che il barbiere gli aveva gia segnato
     expect(mine.length).toBeGreaterThan(1);
+  });
+
+  it('telefono NON verificato: nessun accesso alla scheda (e allo storico) di un altro', () => {
+    const u = store.signInCustomer('Furbetto', '+39 333 000 0001').userId;
+    book(u, SEED_IDS.marco, ['svc_taglio'], at('11:15'));
+    expect(store.myAppointments(u)).toHaveLength(1);
+    expect(store.myAppointments(u)[0]!.customerName).toBe('Furbetto');
   });
 
   it('ogni cliente vede solo i propri appuntamenti', () => {
@@ -132,6 +139,17 @@ describe('prenotazione (come book_appointment)', () => {
     expect(free()).not.toContain('11:15');
     expect(free()).not.toContain('11:30');
     expect(free()).toContain('11:45');
+  });
+
+  it('cancellazione account: profilo via, scheda anonima, appuntamenti futuri annullati', () => {
+    const { id } = book(b, SEED_IDS.marco, ['svc_taglio'], at('11:15'));
+    store.deleteAccount(b, NOW);
+    expect(store.session(b)).toBeNull();
+    const a = store.state.appointments.find((x) => x.id === id)!;
+    expect(a.status).toBe('cancelled');
+    expect(a.customerName).toBe('Cliente eliminato');
+    expect(store.state.customers.some((c) => c.fullName === 'Cliente Uno')).toBe(false);
+    expect(errorOf(() => store.deleteAccount(SEED_IDS.owner, NOW))).toBe('forbidden');
   });
 
   it('solo lo staff legge l agenda', () => {

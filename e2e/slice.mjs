@@ -2,7 +2,7 @@
  * Vertical slice end-to-end (web): un cliente prenota dall'app Cliente,
  * il titolare lo vede nell'agenda del gestionale. Salva gli screenshot per replica-diff.
  *
- *   pnpm export:web && node e2e/slice.mjs
+ *   pnpm e2e        (= build web con EXPO_PUBLIC_BACKEND=fake + questo script)
  *
  * Avvia da solo il backend finto (porta 8787) e serve le due build web (8081 cliente, 8082 gestionale).
  * Fallisce se un passaggio non riesce o se una pagina scrive errori in console.
@@ -65,7 +65,16 @@ function check(cond, msg) {
   console.log(`${cond ? 'ok  ' : 'FAIL'} ${msg}`);
 }
 
-const api = spawn('pnpm', ['--filter', '@bb/api', 'fake-server'], { cwd: ROOT, stdio: 'ignore', env: { ...process.env, FAKE_PORT: '8787' } });
+// un backend finto rimasto acceso da prima falserebbe il test
+if (await fetch('http://localhost:8787/rpc/getSalon', { method: 'POST' }).then(() => true, () => false)) {
+  console.error('la porta 8787 e gia occupata (un backend finto rimasto acceso?): chiudilo e riprova');
+  process.exit(1);
+}
+// tsx in un gruppo di processi a se: alla fine si chiude tutto il gruppo (con pnpm resterebbe vivo il figlio)
+const api = spawn(join(ROOT, 'node_modules/.bin/tsx'), ['packages/api/src/fake/server.ts'], {
+  cwd: ROOT, stdio: 'ignore', detached: true, env: { ...process.env, FAKE_PORT: '8787' },
+});
+const stopApi = () => { try { process.kill(-api.pid, 'SIGTERM'); } catch {} };
 const servers = [];
 let browser;
 try {
@@ -153,7 +162,7 @@ try {
   await b.getByTestId('staff-email').waitFor();
   check(b.url().endsWith('/accedi'), 'S21 senza accesso si finisce sulla pagina di accesso');
   await shot(b, 'S21-accesso-1440');
-  await b.getByTestId('staff-email').fill('titolare@demo.test');
+  await b.getByTestId('staff-email').fill('titolare@barberbooking.demo');
   await b.getByTestId('staff-submit').click();
   await b.getByText('Prossimi clienti').waitFor();
   await shot(b, 'S22-oggi-1440');
@@ -169,7 +178,7 @@ try {
 
   const bm = await newPage(390, 844);
   await bm.goto('http://localhost:8082/accedi');
-  await bm.getByTestId('staff-email').fill('titolare@demo.test');
+  await bm.getByTestId('staff-email').fill('titolare@barberbooking.demo');
   await bm.getByTestId('staff-submit').click();
   await bm.getByText('Prossimi clienti').waitFor();
   await shot(bm, 'S22-oggi-390');
@@ -192,7 +201,7 @@ try {
 } finally {
   await browser?.close();
   servers.forEach((s) => s.close());
-  api.kill();
+  stopApi();
 }
 console.log(failures.length ? `\n${failures.length} controlli falliti` : '\ntutti i controlli passati');
 process.exit(failures.length ? 1 : 0);

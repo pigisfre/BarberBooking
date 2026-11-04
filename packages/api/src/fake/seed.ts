@@ -93,7 +93,7 @@ export function createSeed(now: Date = new Date()): StoreState {
       { id: 'cat_barba', name: 'Barba', sortOrder: 1 },
     ],
     services, staff, hours, blocks, customers, appointments,
-    profiles: [{ id: SEED_IDS.owner, name: 'Titolare Demo', phone: null, email: 'titolare@demo.test' }],
+    profiles: [{ id: SEED_IDS.owner, name: 'Titolare Demo', phone: null, email: 'titolare@barberbooking.demo', phoneVerified: false }],
     staffUsers: { [SEED_IDS.owner]: 'owner' },
   };
 }

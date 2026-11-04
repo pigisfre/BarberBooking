@@ -1,7 +1,7 @@
 feature,area,priority,original,clone,notes
-Cliente: registrazione con telefono + OTP o email,cliente-account,must,yes,partial,originale richiede account (fonte 9); accesso finto con nome + telefono; OTP/Apple/Google con replica-backend
+Cliente: registrazione con telefono + OTP o email,cliente-account,must,yes,partial,demo su Supabase: accesso anonimo + nome e telefono (non verificato); OTP SMS / Apple / Google / email per il prodotto vero
 Cliente: accesso con Apple e Google,cliente-account,should,unknown,no,obbligatorio Apple se c'e Google
-Cliente: elimina account,cliente-account,must,unknown,no,richiesto da Apple e GDPR
+Cliente: elimina account,cliente-account,must,unknown,yes,"delete_my_account(): utente eliminato, scheda del salone anonima, appuntamenti futuri annullati"
 Cliente: cerca salone per nome/citta/vicino,cliente-ricerca,skip,yes,skip,"single-tenant: l'app e di un solo salone, non c'e nulla da cercare"
 Cliente: l'app apre direttamente il salone (link e QR portano alla prenotazione),cliente-ricerca,must,yes,partial,"single-tenant: niente ricerca, home = salone; home = salone; link e QR non ancora"
 Cliente: pagina salone con info orari servizi staff,cliente-ricerca,must,yes,partial,"nome, indirizzo, descrizione, aperto oggi fino a, servizi; foto e staff in home non ancora"
@@ -23,7 +23,7 @@ Notifiche: fallback SMS,notifiche,could,unknown,no,
 Notifiche: centro notifiche in app,notifiche,should,unknown,no,
 Salone: registrazione con prova 30 giorni senza carta,onboarding-salone,skip,yes,skip,"single-tenant: l'installazione la fai tu per il cliente, niente self-signup"
 Salone: wizard iniziale salone orari servizi staff,onboarding-salone,should,unknown,no,single-tenant: serve a te in fase di installazione o al titolare al primo accesso
-Salone: login staff con ruoli titolare/admin/collaboratore,staff,must,unknown,partial,"inferito; accesso finto via email; ruoli nel modello, non ancora nell'interfaccia"
+Salone: login staff con ruoli titolare/admin/collaboratore,staff,must,unknown,partial,"email + password su Supabase; ruoli nel database e nella RLS, non ancora gestibili dall'interfaccia"
 Agenda: vista giorno con colonne per operatore,agenda,must,yes,partial,"fonte 7 (agenda digitale); sola lettura: colonne, pause, ora attuale; su telefono un operatore alla volta"
 Agenda: vista settimana e lista,agenda,should,unknown,no,
 Agenda: crea/modifica appuntamento (telefono o walk-in),agenda,must,yes,no,
