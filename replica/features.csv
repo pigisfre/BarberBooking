@@ -1,0 +1,69 @@
+feature,area,priority,original,clone,notes
+Cliente: registrazione con telefono + OTP o email,cliente-account,must,yes,no,originale richiede account (fonte 9)
+Cliente: accesso con Apple e Google,cliente-account,should,unknown,no,obbligatorio Apple se c'e Google
+Cliente: elimina account,cliente-account,must,unknown,no,richiesto da Apple e GDPR
+Cliente: cerca salone per nome/citta/vicino,cliente-ricerca,must,yes,no,fonte 9
+Cliente: apri salone da link o QR,cliente-ricerca,must,yes,no,fonte 4 (QR) e fonte 12
+Cliente: pagina salone con info orari servizi staff,cliente-ricerca,must,yes,no,
+Cliente: saloni preferiti,cliente-ricerca,should,unknown,no,inferito
+Cliente: scegli uno o piu servizi,prenotazione,must,yes,no,fonte 13
+Cliente: scegli operatore o qualsiasi,prenotazione,must,yes,no,fonte 13
+Cliente: vedi slot liberi e prenota,prenotazione,must,yes,no,core loop
+Cliente: note alla prenotazione,prenotazione,could,unknown,no,
+Cliente: conferma e aggiungi al calendario del telefono,prenotazione,should,unknown,no,
+Cliente: i miei appuntamenti prossimi e passati,prenotazione,must,yes,no,
+Cliente: sposta o annulla entro la finestra,prenotazione,must,yes,no,
+Cliente: ripeti ultima prenotazione,prenotazione,could,unknown,no,
+Cliente: mettiti in coda se pieno,coda,should,yes,no,fonte 10 e 13 (coda dinamica)
+Web: pagina pubblica di prenotazione per salone,prenotazione-web,must,yes,no,fonte 12
+Web: prenotazione da Instagram e Google,prenotazione-web,should,yes,no,fonte 10; Reserve with Google richiede partnership
+Notifiche: promemoria WhatsApp automatico la sera prima,notifiche,must,yes,no,fonte 2; API ufficiale Meta con template
+Notifiche: conferma/annullamento push ed email,notifiche,must,yes,no,
+Notifiche: fallback SMS,notifiche,could,unknown,no,
+Notifiche: centro notifiche in app,notifiche,should,unknown,no,
+Salone: registrazione con prova 30 giorni senza carta,onboarding-salone,must,yes,no,fonte 7
+Salone: wizard iniziale salone orari servizi staff,onboarding-salone,must,unknown,no,inferito
+Salone: login staff con ruoli titolare/admin/collaboratore,staff,must,unknown,no,inferito
+Agenda: vista giorno con colonne per operatore,agenda,must,yes,no,fonte 7 (agenda digitale)
+Agenda: vista settimana e lista,agenda,should,unknown,no,
+Agenda: crea/modifica appuntamento (telefono o walk-in),agenda,must,yes,no,
+Agenda: drag and drop per spostare,agenda,should,unknown,no,
+Agenda: blocchi pause e ferie,agenda,must,unknown,no,
+Agenda: stati appuntamento incluso no-show,agenda,must,unknown,no,
+Agenda: approvazione manuale delle prenotazioni online,agenda,could,unknown,no,
+Agenda: sincronizzazione con Google Calendar,agenda,could,yes,no,fonte 10
+Agenda: gestione coda/lista d'attesa,coda,should,yes,no,fonte 10
+Servizi: catalogo con categorie durata prezzo,servizi,must,yes,no,
+Servizi: servizi abilitati per operatore,servizi,must,unknown,no,
+Staff: orari settimanali per operatore,staff,must,unknown,no,
+Staff: commissioni per operatore,staff,could,unknown,no,visto nei concorrenti non confermato qui
+Orari salone e giorni di chiusura,impostazioni,must,yes,no,
+Regole online: anticipo minimo finestra cancellazione intervallo slot,impostazioni,must,unknown,no,
+Clienti: rubrica con ricerca,clienti,must,yes,no,
+Clienti: scheda con storico spesa no-show note,clienti,must,unknown,no,
+Clienti: consensi marketing GDPR,clienti,must,unknown,no,
+Clienti: import da CSV,clienti,should,no,no,aggiunta nostra per chi cambia gestionale
+Cassa: chiusura conto servizi + prodotti,cassa,should,yes,no,fonte 4 (a pagamento nell'originale)
+Cassa: sconti per cliente,cassa,should,yes,no,fonte 4
+Cassa: QR sulla ricevuta per scaricare l'app,cassa,could,yes,no,fonte 4
+Cassa: movimenti e chiusura giornata,cassa,should,unknown,no,
+Cassa: scontrino fiscale con registratore telematico,cassa,skip,unknown,skip,richiede RT omologato o fornitore certificato: integrazione futura
+Vista combinata agenda + cassa + magazzino,cassa,could,yes,no,fonte 4
+Magazzino: prodotti e giacenze,magazzino,should,yes,no,fonte 2
+Magazzino: carichi ordini e scarico automatico alla vendita,magazzino,should,yes,no,fonte 2
+Magazzino: avviso sotto scorta,magazzino,could,unknown,no,
+Analytics: incassi e vendite per periodo con confronto,analytics,should,yes,no,fonte 6
+Analytics: servizi top fasce orarie rendimento per operatore,analytics,should,yes,no,fonte 6
+Marketing: campagne WhatsApp ed email a segmenti,marketing,should,yes,no,fonte 3
+Marketing: automazioni compleanno e riattivazione,marketing,could,unknown,no,
+Fidelity: voucher e buoni,fidelity,should,yes,no,fonte 10
+Fidelity: punti fedelta,fidelity,could,unknown,no,fonte 7 dice fidelity; meccanica ignota
+Fidelity: porta un amico,fidelity,could,yes,no,fonte 7
+Pagamenti: acconto o prepagamento online (Stripe Connect),pagamenti,should,yes,no,fonte 3 e 5
+Canali: link e QR della pagina salone,canali,must,yes,no,fonte 7
+Canali: mini sito web del salone,canali,could,yes,no,fonte 7
+App personalizzata con marchio del salone,canali,skip,yes,skip,servizio su misura non una funzione; rimandato
+Piattaforma: abbonamento SaaS con Stripe Billing e disdetta in un clic,piattaforma,must,no,no,aggiunta nostra (lato venditore)
+Piattaforma: console centrale saloni piani metriche,piattaforma,must,no,no,aggiunta nostra (la dashboard centrale richiesta)
+Piattaforma: multi-sede per un titolare,piattaforma,could,unknown,no,
+Rete di saloni e clienti esistenti di BarberApp,piattaforma,skip,yes,skip,e la loro rete non una funzione
