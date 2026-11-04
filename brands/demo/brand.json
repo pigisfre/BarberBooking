@@ -1,0 +1,64 @@
+{
+  "_about": "Brand dimostrativo per lo sviluppo. Non e un cliente reale.",
+  "id": "demo",
+  "salonName": "Barberia Demo",
+  "apps": {
+    "client": {
+      "name": "Barberia Demo",
+      "iosBundleId": "it.barberbooking.demo",
+      "androidPackage": "it.barberbooking.demo",
+      "scheme": "bbdemo"
+    },
+    "business": {
+      "name": "Demo Gestionale",
+      "iosBundleId": "it.barberbooking.demo.gestionale",
+      "androidPackage": "it.barberbooking.demo.gestionale",
+      "scheme": "bbdemo-gest"
+    }
+  },
+  "web": {
+    "bookingDomain": "localhost",
+    "businessDomain": "localhost"
+  },
+  "theme": {
+    "accent": "#2f52b8",
+    "accentDark": null,
+    "appearance": "system"
+  },
+  "assets": {
+    "logo": "assets/logo.svg",
+    "logoMono": "assets/logo-mono.svg",
+    "appIcon": "assets/icon-1024.png",
+    "splash": "assets/splash.png",
+    "favicon": "assets/favicon.png",
+    "ogImage": "assets/og-1200x630.png"
+  },
+  "backend": {
+    "supabaseUrl": null,
+    "supabaseAnonKey": null,
+    "sentryDsn": null,
+    "fakeServerUrl": "http://localhost:8787"
+  },
+  "legal": {
+    "businessName": "Barberia Demo (dati di prova)",
+    "vatNumber": "IT00000000000",
+    "address": "Via di Prova 1, 00100 Roma",
+    "privacyUrl": null,
+    "termsUrl": null,
+    "supportEmail": "demo@example.com"
+  },
+  "features": {
+    "multiStaff": true,
+    "whatsappReminders": true,
+    "onlineDeposits": false,
+    "cash": false,
+    "inventory": false,
+    "marketing": false,
+    "loyalty": false,
+    "waitlist": false
+  },
+  "stores": {
+    "appleTeamId": null,
+    "googlePlayAccount": null
+  }
+}

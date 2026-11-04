@@ -1,0 +1,14 @@
+{
+  "name": "barberbooking",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev:server": "pnpm --filter @bb/api fake-server",
+    "client": "pnpm --filter @bb/client web",
+    "business": "pnpm --filter @bb/business web",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "tokens": "python3 replica/design/build_tokens.py",
+    "export:web": "pnpm -r --if-present export:web"
+  }
+}

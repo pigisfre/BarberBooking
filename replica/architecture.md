@@ -49,13 +49,13 @@ Perché due app e non una:
 | mobile + web | **Expo SDK (React Native) + Expo Router + react-native-web**, TypeScript | un codice per 3 piattaforme, come richiesto |
 | web pubblico | app Cliente in build web, rendering statico/server di Expo Router | link da Instagram e Google, indicizzabile |
 | personalizzazione | `brands/<cliente>/brand.json` + `app.config.ts` + profili EAS | N clienti, un codice |
-| styling | **NativeWind** (Tailwind) + token di replica-design, stile da skill `apple-design` | stesse classi su native e web |
+| styling | **StyleSheet + token tramite `useTheme()`** (`packages/ui`), stile da skill `apple-design` | scelto in build al posto di NativeWind: la stabile (4.x) e per Tailwind 3, quella per Tailwind 4 e RC; i componenti usano solo ruoli dei token, `tailwind.tokens.js` resta pronto se si vorra passare a NativeWind |
 | animazioni e gesti | `react-native-reanimated` (molle) + `react-native-gesture-handler` | agenda trascinabile, pannelli dal basso |
 | stato server | **TanStack Query** | cache, retry, lettura offline |
 | validazione | **zod** in `packages/core` | stessi schemi nelle app e nelle Edge Functions |
-| database | **un progetto Supabase per cliente**, regione UE (Francoforte) | dati del barbiere separati fisicamente; GDPR più semplice |
+| database | **un progetto Supabase per cliente**, regione UE (Francoforte), **tutti nella stessa organizzazione Supabase** | dati separati fisicamente; il piano Pro si paga per organizzazione (~25 $) + ~10 $ di compute per progetto |
 | accesso dati | Supabase client + **RLS** + **RPC Postgres** per le operazioni critiche | la sicurezza sta nel database |
-| auth | **Supabase Auth**: clienti con **telefono + OTP SMS** (più Apple/Google); staff con email + password o magic link | il barbiere conosce i clienti dal telefono |
+| auth | **Supabase Auth**: clienti con **Apple, Google o link via email** (gratuiti) come prima scelta; **telefono + OTP SMS** come alternativa (costa ~0,09 $ a SMS); staff con email + password o magic link. Il numero di telefono si chiede comunque nel profilo | meno costi; il barbiere ritrova i clienti dal telefono |
 | server logic | **Supabase Edge Functions** (Deno) | slot, webhook, invio messaggi |
 | realtime | **Supabase Realtime** su `appointments` | agenda aggiornata su telefono, tablet e PC del salone |
 | WhatsApp | **WhatsApp Business Platform (Cloud API di Meta)** sul **numero business del barbiere** | i clienti ricevono il messaggio dal loro barbiere; Meta fattura direttamente a lui |
@@ -64,7 +64,7 @@ Perché due app e non una:
 | push | **Expo Push Notifications** | un'API per iOS e Android |
 | jobs | **pg_cron** in ogni progetto Supabase che chiama le Edge Functions | niente servizi extra |
 | file | **Supabase Storage** (foto salone, avatar operatori) | |
-| hosting web | **Vercel**, un progetto per cliente (`prenota.<dominio-barbiere>.it`, `gestionale.<dominio>.it`) | |
+| hosting web | **Cloudflare Pages** (gratuito anche per uso commerciale), un progetto per cliente (`prenota.<dominio-barbiere>.it`, `gestionale.<dominio>.it`) | Vercel Hobby non ammette uso commerciale; Pro costa 20 $/mese |
 | build mobile | **EAS Build + Submit** sull'account sviluppatore del barbiere; **EAS Update** per fix rapidi | |
 | errori | **Sentry**, un progetto con tag `brand` | vedi i crash di tutti i clienti in un posto solo |
 | acconti online (fase 2) | **Stripe**, account del barbiere (Standard, non Connect) | i soldi vanno a lui senza passare da te |
@@ -142,13 +142,13 @@ Webhooks out: nessuno.
 Jobs (pg_cron, in ogni installazione):
 | job | schedule | what |
 | --- | --- | --- |
-| `send-reminders` | ogni ora al minuto 0 | se l'ora locale = `salon.reminder_hour`, manda il WhatsApp ai clienti con appuntamento domani; fallback push/email; setta `reminder_sent_at` (idempotente) |
+| `send-reminders` | ogni ora al minuto 0 | se l'ora locale = `salon.reminder_hour`, avvisa i clienti con appuntamento domani: **push** (gratis) a chi ha l'app, **WhatsApp** solo a chi non ce l'ha, email come ultima scelta; setta `reminder_sent_at` (idempotente) |
 | `notify-booking` | al volo (trigger → coda) | conferma al cliente; push al barbiere per nuove prenotazioni, spostamenti e annullamenti |
 | `cleanup` | ogni settimana | token push scaduti, vecchi `webhook_events` |
 
 Strumenti tuoi, fuori dalle app:
 - `scripts/new-client`: usa la CLI di Supabase per creare il progetto, applicare le migrazioni, creare la riga `salon`, invitare il titolare e impostare i segreti delle Edge Functions.
-- `scripts/deploy-all`: per ogni cliente in `brands/`, applica le migrazioni, pubblica il web e manda l'EAS Update. In CI è una matrice, un job per cliente.
+- `scripts/deploy-all`: per ogni cliente in `brands/`, applica le migrazioni, pubblica il web su Cloudflare Pages e manda l'EAS Update. In CI è una matrice, un job per cliente.
 
 Solo API ufficiali, con chiavi tue o del barbiere: Supabase, Meta WhatsApp Cloud API, Resend, Expo, provider SMS, Stripe. Nessun endpoint di BarberApp.
 
@@ -162,7 +162,7 @@ Solo API ufficiali, con chiavi tue o del barbiere: Supabase, Meta WhatsApp Cloud
 - **Aggiornamenti a N clienti:** un'unica versione del codice per tutti; le migrazioni devono essere retrocompatibili, perché le app già installate restano per un po' alla versione precedente. `deploy-all` con un rollout cliente per cliente: prima un cliente pilota, poi gli altri.
 - **Costi per cliente:**
   - Supabase Free mette in pausa i progetti inattivi, quindi in produzione serve il piano Pro (circa 25 $/mese per progetto);
-  - Vercel, gli SMS OTP e WhatsApp hanno costi a parte.
+  - gli SMS OTP e WhatsApp hanno costi a parte. Stima con i risparmi: circa 20-35 € al mese per barbiere.
   Vanno inclusi nel canone che fai pagare al barbiere.
 - **WhatsApp:** account Meta Business **del barbiere**, numero dedicato, template approvati ("promemoria", "conferma"). Va configurato in fase di installazione e richiede qualche giorno di verifica.
 - **Fusi orari e ora legale:** orari in ora locale del salone; slot calcolati in `packages/core` con `Temporal` / `date-fns-tz`. I giorni del cambio d'ora (23 o 25 ore) hanno test dedicati.

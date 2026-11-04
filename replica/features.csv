@@ -1,21 +1,21 @@
 feature,area,priority,original,clone,notes
-Cliente: registrazione con telefono + OTP o email,cliente-account,must,yes,no,originale richiede account (fonte 9)
+Cliente: registrazione con telefono + OTP o email,cliente-account,must,yes,partial,originale richiede account (fonte 9); accesso finto con nome + telefono; OTP/Apple/Google con replica-backend
 Cliente: accesso con Apple e Google,cliente-account,should,unknown,no,obbligatorio Apple se c'e Google
 Cliente: elimina account,cliente-account,must,unknown,no,richiesto da Apple e GDPR
 Cliente: cerca salone per nome/citta/vicino,cliente-ricerca,skip,yes,skip,"single-tenant: l'app e di un solo salone, non c'e nulla da cercare"
-Cliente: l'app apre direttamente il salone (link e QR portano alla prenotazione),cliente-ricerca,must,yes,no,"single-tenant: niente ricerca, home = salone"
-Cliente: pagina salone con info orari servizi staff,cliente-ricerca,must,yes,no,
+Cliente: l'app apre direttamente il salone (link e QR portano alla prenotazione),cliente-ricerca,must,yes,partial,"single-tenant: niente ricerca, home = salone; home = salone; link e QR non ancora"
+Cliente: pagina salone con info orari servizi staff,cliente-ricerca,must,yes,partial,"nome, indirizzo, descrizione, aperto oggi fino a, servizi; foto e staff in home non ancora"
 Cliente: saloni preferiti,cliente-ricerca,skip,unknown,skip,single-tenant: un solo salone
-Cliente: scegli uno o piu servizi,prenotazione,must,yes,no,fonte 13
-Cliente: scegli operatore o qualsiasi,prenotazione,must,yes,no,fonte 13
-Cliente: vedi slot liberi e prenota,prenotazione,must,yes,no,core loop
-Cliente: note alla prenotazione,prenotazione,could,unknown,no,
+Cliente: scegli uno o piu servizi,prenotazione,must,yes,yes,fonte 13; con durata e totale aggiornati nel pulsante
+Cliente: scegli operatore o qualsiasi,prenotazione,must,yes,yes,fonte 13; solo chi fa tutti i servizi scelti; si salta se ce n'e uno solo
+Cliente: vedi slot liberi e prenota,prenotazione,must,yes,yes,core loop; calcolo slot testato (ora legale inclusa); prenotazione atomica e idempotente; oggi sul backend finto
+Cliente: note alla prenotazione,prenotazione,could,unknown,yes,
 Cliente: conferma e aggiungi al calendario del telefono,prenotazione,should,unknown,no,
-Cliente: i miei appuntamenti prossimi e passati,prenotazione,must,yes,no,
-Cliente: sposta o annulla entro la finestra,prenotazione,must,yes,no,
+Cliente: i miei appuntamenti prossimi e passati,prenotazione,must,yes,yes,
+Cliente: sposta o annulla entro la finestra,prenotazione,must,yes,partial,annulla si (con finestra di 2 ore); sposta non ancora
 Cliente: ripeti ultima prenotazione,prenotazione,could,unknown,no,
 Cliente: mettiti in coda se pieno,coda,should,yes,no,fonte 10 e 13 (coda dinamica)
-Web: pagina pubblica di prenotazione per salone,prenotazione-web,must,yes,no,fonte 12
+Web: pagina pubblica di prenotazione per salone,prenotazione-web,must,yes,partial,fonte 12; l'app Cliente gira su web; manca rendering statico per SEO
 Web: prenotazione da Instagram e Google,prenotazione-web,should,yes,no,fonte 10; Reserve with Google richiede partnership
 Notifiche: promemoria WhatsApp automatico la sera prima,notifiche,must,yes,no,fonte 2; API ufficiale Meta con template
 Notifiche: conferma/annullamento push ed email,notifiche,must,yes,no,
@@ -23,13 +23,13 @@ Notifiche: fallback SMS,notifiche,could,unknown,no,
 Notifiche: centro notifiche in app,notifiche,should,unknown,no,
 Salone: registrazione con prova 30 giorni senza carta,onboarding-salone,skip,yes,skip,"single-tenant: l'installazione la fai tu per il cliente, niente self-signup"
 Salone: wizard iniziale salone orari servizi staff,onboarding-salone,should,unknown,no,single-tenant: serve a te in fase di installazione o al titolare al primo accesso
-Salone: login staff con ruoli titolare/admin/collaboratore,staff,must,unknown,no,inferito
-Agenda: vista giorno con colonne per operatore,agenda,must,yes,no,fonte 7 (agenda digitale)
+Salone: login staff con ruoli titolare/admin/collaboratore,staff,must,unknown,partial,"inferito; accesso finto via email; ruoli nel modello, non ancora nell'interfaccia"
+Agenda: vista giorno con colonne per operatore,agenda,must,yes,partial,"fonte 7 (agenda digitale); sola lettura: colonne, pause, ora attuale; su telefono un operatore alla volta"
 Agenda: vista settimana e lista,agenda,should,unknown,no,
 Agenda: crea/modifica appuntamento (telefono o walk-in),agenda,must,yes,no,
 Agenda: drag and drop per spostare,agenda,should,unknown,no,
 Agenda: blocchi pause e ferie,agenda,must,unknown,no,
-Agenda: stati appuntamento incluso no-show,agenda,must,unknown,no,
+Agenda: stati appuntamento incluso no-show,agenda,must,unknown,partial,"mostrati, non ancora modificabili"
 Agenda: approvazione manuale delle prenotazioni online,agenda,could,unknown,no,
 Agenda: sincronizzazione con Google Calendar,agenda,could,yes,no,fonte 10
 Agenda: gestione coda/lista d'attesa,coda,should,yes,no,fonte 10
@@ -67,4 +67,4 @@ App personalizzata con marchio del salone,canali,skip,yes,skip,servizio su misur
 Installazione: build e pubblicazione store e web per il singolo cliente,installazione,must,no,no,aggiunta nostra: app sull'account sviluppatore del barbiere (Apple 4.2.6)
 Piattaforma: multi-sede per un titolare,piattaforma,could,unknown,no,"eventuale: piu sedi dello stesso barbiere, non piu barbieri"
 Rete di saloni e clienti esistenti di BarberApp,piattaforma,skip,yes,skip,e la loro rete; e comunque fuori dal modello single-tenant
-"Dashboard del titolare: KPI del giorno, prossimi clienti e incassi",dashboard,must,yes,no,la dashboard centrale richiesta = home del gestionale (S22)
+"Dashboard del titolare: KPI del giorno, prossimi clienti e incassi",dashboard,must,yes,partial,"la dashboard centrale richiesta = home del gestionale (S22); appuntamenti di oggi vs settimana scorsa, incasso previsto, prossimi clienti"
