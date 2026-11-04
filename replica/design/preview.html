@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anteprima design system</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* Solo ruoli dai token: nessun esadecimale nei componenti. */
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 17px/22px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: rgb(var(--color-bg)); color: rgb(var(--color-text)); -webkit-font-smoothing: antialiased; }
+  .page { display: flex; gap: 32px; padding: 32px; align-items: flex-start; flex-wrap: wrap; }
+  .num { font-variant-numeric: tabular-nums; }
+  .muted { color: rgb(var(--color-text-muted)); }
+  .footnote { font-size: 13px; line-height: 18px; }
+  .subhead { font-size: 15px; line-height: 20px; }
+  .headline { font-weight: 600; }
+  .title3 { font-size: 20px; line-height: 25px; font-weight: 600; letter-spacing: -0.005em; }
+  .title1 { font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.015em; }
+  .large { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.02em; }
+
+  /* telefono */
+  .phone { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; position: relative;
+           background: rgb(var(--color-bg)); box-shadow: 0 0 0 10px rgb(var(--color-fill)), 0 24px 64px rgba(0,0,0,.18); }
+  .cover { height: 210px; position: relative;
+           background: linear-gradient(160deg, rgb(var(--color-accent) / .85), rgb(var(--color-accent) / .35)),
+                       repeating-linear-gradient(45deg, rgb(var(--color-surface) / .08) 0 8px, transparent 8px 16px); }
+  .cover::after { content: ""; position: absolute; inset: 40% 0 0 0; background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,.55)); }
+  .cover h1 { position: absolute; left: 16px; bottom: 12px; margin: 0; color: #fff; z-index: 1; } /* testo su foto: sempre bianco su sfumatura scura (material.photoOverlay) */
+  .content { padding: 16px 16px 140px; }
+  .meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .open { color: rgb(var(--color-success)); font-weight: 600; }
+
+  .group { background: rgb(var(--color-surface)); border-radius: 14px; overflow: hidden; margin-bottom: 24px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 44px; position: relative; }
+  .row + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px; background: rgb(var(--color-border)); }
+  .row.sel { background: rgb(var(--color-accent-tint)); }
+  .row .grow { flex: 1; }
+  .check { width: 24px; height: 24px; border-radius: 999px; border: 1.5px solid rgb(var(--color-border-input));
+           display: grid; place-items: center; }
+  .row.sel .check { background: rgb(var(--color-accent)); border-color: rgb(var(--color-accent)); color: rgb(var(--color-on-accent)); }
+  .section { font-size: 13px; line-height: 18px; text-transform: uppercase; letter-spacing: .02em;
+             color: rgb(var(--color-text-muted)); margin: 0 0 8px 16px; }
+
+  .dates { display: flex; gap: 8px; overflow: hidden; margin: 0 0 16px; }
+  .day { flex: 0 0 52px; height: 64px; border-radius: 14px; background: rgb(var(--color-surface));
+         display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .day b { font-size: 20px; line-height: 25px; }
+  .day.on { background: rgb(var(--color-accent)); color: rgb(var(--color-on-accent)); }
+  .day.empty { opacity: .45; }
+  .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .slot { height: 44px; border-radius: 10px; background: rgb(var(--color-fill)); border: 0; font: inherit;
+          color: rgb(var(--color-text)); font-variant-numeric: tabular-nums; }
+  .slot.on { background: rgb(var(--color-accent)); color: rgb(var(--color-on-accent)); font-weight: 600; }
+
+  .chrome { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 34px;
+            background: rgb(var(--color-surface) / .72); backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%); box-shadow: 0 -1px 0 rgb(var(--color-border)); }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 14px;
+         border: 0; width: 100%; font-family: inherit; font-size: 17px; line-height: 22px; font-weight: 600; cursor: pointer; }
+  .btn.primary { background: rgb(var(--color-accent)); color: rgb(var(--color-on-accent)); }
+  .btn.tinted { background: rgb(var(--color-accent-tint)); color: rgb(var(--color-accent-text)); height: 44px; width: auto; padding: 0 16px; }
+  .btn.secondary { background: rgb(var(--color-fill)); color: rgb(var(--color-text)); height: 44px; width: auto; padding: 0 16px; }
+  .btn.danger { background: rgb(var(--color-danger)); color: rgb(var(--color-on-danger)); height: 44px; width: auto; padding: 0 16px; }
+  .btn:active { transform: scale(.97); }
+  .btn:focus-visible, .slot:focus-visible { outline: 2px solid rgb(var(--color-accent)); outline-offset: 2px; }
+
+  /* gestionale */
+  .desk { width: 900px; border-radius: 14px; overflow: hidden; background: rgb(var(--color-surface));
+          box-shadow: 0 8px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.06); display: grid; grid-template-columns: 200px 1fr; }
+  .side { background: rgb(var(--color-bg)); padding: 16px 8px; }
+  .side div { height: 36px; display: flex; align-items: center; padding: 0 12px; border-radius: 10px; font-size: 15px; }
+  .side .on { background: rgb(var(--color-fill)); font-weight: 600; }
+  .main { padding: 16px 20px 20px; }
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .seg { display: inline-flex; background: rgb(var(--color-fill)); border-radius: 10px; padding: 2px; font-size: 13px; }
+  .seg span { padding: 6px 14px; border-radius: 8px; }
+  .seg .on { background: rgb(var(--color-surface)); box-shadow: 0 1px 2px rgba(0,0,0,.08); font-weight: 600; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .tile { background: rgb(var(--color-bg)); border-radius: 14px; padding: 12px 16px; }
+  .tile .v { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .up { color: rgb(var(--color-success)); } .down { color: rgb(var(--color-danger)); }
+  .agenda { display: grid; grid-template-columns: 52px repeat(3, 1fr); position: relative; }
+  .agenda .h { height: 64px; font-size: 12px; color: rgb(var(--color-text-muted)); font-variant-numeric: tabular-nums;
+               transform: translateY(-8px); }
+  .col { position: relative; border-left: 1px solid rgb(var(--color-border));
+         background: repeating-linear-gradient(to bottom, transparent 0 63px, rgb(var(--color-border)) 63px 64px); }
+  .colhead { display: flex; align-items: center; gap: 8px; height: 40px; padding-left: 8px; font-weight: 600; font-size: 15px; }
+  .av { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+  .blk { position: absolute; left: 4px; right: 4px; border-radius: 10px; padding: 6px 8px 6px 11px; font-size: 13px; line-height: 17px; overflow: hidden; }
+  .blk::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: currentColor; }
+  .blk b { display: block; font-size: 13px; }
+  .blk.short { padding-top: 7px; white-space: nowrap; text-overflow: ellipsis; } .blk.short b { display: inline; } /* < 44pt: una riga sola */
+  .blk.pending { outline: 1.5px dashed currentColor; outline-offset: -1.5px; }
+  .blk.done { opacity: .6; }
+  .blk.lift { box-shadow: 0 12px 32px rgba(0,0,0,.2); transform: scale(1.03); z-index: 2; }
+  .pause { position: absolute; left: 4px; right: 4px; border-radius: 10px; font-size: 12px; color: rgb(var(--color-text-muted));
+           padding: 6px 8px; background: repeating-linear-gradient(135deg, rgb(var(--color-fill)) 0 6px, transparent 6px 12px); }
+  .now { position: absolute; left: 44px; right: 0; height: 2px; background: rgb(var(--color-danger)); z-index: 3; }
+  .now::before { content: ""; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 999px; background: rgb(var(--color-danger)); }
+  .s1 { background: rgb(var(--color-staff-1-bg)); color: rgb(var(--color-staff-1-ink)); }
+  .s2 { background: rgb(var(--color-staff-2-bg)); color: rgb(var(--color-staff-2-ink)); }
+  .s3 { background: rgb(var(--color-staff-3-bg)); color: rgb(var(--color-staff-3-ink)); }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .pill { font-size: 12px; line-height: 16px; font-weight: 600; padding: 3px 8px; border-radius: 999px; }
+  .p-ok { background: rgb(var(--color-accent-tint)); color: rgb(var(--color-accent-text)); }
+  .p-wait { background: rgb(var(--color-warning-tint)); color: rgb(var(--color-warning)); }
+  .p-done { background: rgb(var(--color-success-tint)); color: rgb(var(--color-success)); }
+  .p-ns { background: rgb(var(--color-danger-tint)); color: rgb(var(--color-danger)); }
+  .p-x { background: rgb(var(--color-fill)); color: rgb(var(--color-text-muted)); text-decoration: line-through; }
+  .buttons { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .field { margin-top: 16px; }
+  .field label { display: block; font-size: 13px; color: rgb(var(--color-text-muted)); margin-bottom: 6px; }
+  .input { height: 44px; border-radius: 10px; border: 1px solid rgb(var(--color-border-input)); padding: 0 12px;
+           display: flex; align-items: center; background: rgb(var(--color-surface)); font-variant-numeric: tabular-nums; }
+  .input.focus { border: 2px solid rgb(var(--color-accent)); padding: 0 11px; }
+  .input.err { border-color: rgb(var(--color-danger)); }
+  .err-msg { font-size: 13px; color: rgb(var(--color-danger)); margin-top: 6px; }
+  @media (prefers-reduced-motion: reduce) { .btn:active { transform: none; opacity: .85; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- App cliente: S04 + S05 + S07 -->
+  <div class="phone" aria-label="App cliente, prenotazione">
+    <div class="cover"><h1 class="large">Barberia Esempio</h1></div>
+    <div class="content">
+      <div class="meta subhead"><span class="open">Aperto fino alle 19:00</span><span class="muted">Via Esempio 1</span></div>
+
+      <p class="section">Servizi</p>
+      <div class="group">
+        <div class="row sel"><div class="grow"><div class="headline">Taglio</div><div class="subhead muted num">30 min · 20,00 €</div></div><div class="check">✓</div></div>
+        <div class="row sel"><div class="grow"><div class="headline">Barba</div><div class="subhead muted num">15 min · 10,00 €</div></div><div class="check">✓</div></div>
+        <div class="row"><div class="grow"><div class="headline">Taglio bambino</div><div class="subhead muted num">20 min · 15,00 €</div></div><div class="check"></div></div>
+      </div>
+
+      <p class="section">Quando</p>
+      <div class="dates num">
+        <div class="day"><span class="footnote">mar</span><b>10</b></div>
+        <div class="day on"><span class="footnote">mer</span><b>11</b></div>
+        <div class="day"><span class="footnote">gio</span><b>12</b></div>
+        <div class="day empty"><span class="footnote">ven</span><b>13</b></div>
+        <div class="day"><span class="footnote">sab</span><b>14</b></div>
+        <div class="day"><span class="footnote">lun</span><b>16</b></div>
+      </div>
+      <p class="section">Mattina</p>
+      <div class="slots">
+        <button class="slot">9:00</button><button class="slot">9:45</button><button class="slot on">10:30</button>
+        <button class="slot">11:15</button><button class="slot">12:00</button>
+      </div>
+    </div>
+    <div class="chrome"><button class="btn primary num">Continua · 45 min · 30,00 €</button></div>
+  </div>
+
+  <!-- Gestionale: S22 + S23 -->
+  <div class="desk" aria-label="Gestionale, agenda">
+    <div class="side">
+      <div class="on">Oggi</div><div>Agenda</div><div>Clienti</div><div>Servizi</div><div>Staff</div><div>Impostazioni</div>
+    </div>
+    <div class="main">
+      <div class="top"><span class="title1">Mercoledì 11</span>
+        <span class="seg"><span class="on">Giorno</span><span>Settimana</span><span>Lista</span></span></div>
+      <div class="tiles">
+        <div class="tile"><div class="footnote muted">Appuntamenti oggi</div><div class="v">14</div><div class="footnote up">▲ 3 rispetto a mercoledì scorso</div></div>
+        <div class="tile"><div class="footnote muted">Incasso previsto</div><div class="v">412 €</div><div class="footnote up">▲ 8%</div></div>
+        <div class="tile"><div class="footnote muted">No-show del mese</div><div class="v">2</div><div class="footnote down">▼ 1 in più</div></div>
+      </div>
+      <div class="agenda">
+        <div></div>
+        <div class="colhead"><span class="av s1">MA</span>Marco</div>
+        <div class="colhead"><span class="av s2">LU</span>Luca</div>
+        <div class="colhead"><span class="av s3">GI</span>Giulia</div>
+        <div>
+          <div class="h">9:00</div><div class="h">10:00</div><div class="h">11:00</div><div class="h">12:00</div>
+        </div>
+        <div class="col">
+          <div class="blk s1" style="top:0;height:48px"><b class="num">9:00–9:45</b>R. Bianchi · Taglio e barba</div>
+          <div class="blk s1 lift short" style="top:96px;height:32px"><b class="num">10:30</b> E. Gallo</div>
+          <div class="pause" style="top:192px;height:64px">Pausa</div>
+        </div>
+        <div class="col">
+          <div class="blk s2 done short" style="top:16px;height:32px"><b class="num">9:15</b> G. Verdi</div>
+          <div class="blk s2 pending" style="top:128px;height:48px"><b class="num">11:00–11:45</b>Da confermare · F. Neri</div>
+        </div>
+        <div class="col">
+          <div class="blk s3" style="top:64px;height:64px"><b class="num">10:00–11:00</b>A. Russo · Colore</div>
+        </div>
+        <div class="now" style="top:130px"></div>
+      </div>
+      <div class="pills">
+        <span class="pill p-ok">Confermato</span><span class="pill p-wait">Da confermare</span>
+        <span class="pill p-done">Completato</span><span class="pill p-ns">No-show</span><span class="pill p-x">Annullato</span>
+      </div>
+      <div class="buttons">
+        <button class="btn tinted">Nuovo appuntamento</button><button class="btn secondary">Blocca orario</button><button class="btn danger">Annulla appuntamento</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="field"><label>Telefono</label><div class="input focus num">+39 333 123 4567</div></div>
+        <div class="field"><label>Email</label><div class="input err">mario@</div><div class="err-msg">Manca la parte dopo la @</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

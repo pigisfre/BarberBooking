@@ -1,0 +1,527 @@
+{
+  "_about": "Token di design di BarberBooking. Sistema NOSTRO (non misurato dall'originale: nessuno screenshot), costruito sulle regole della skill apple-design e tradotto per Expo/React Native + NativeWind. White-label: solo il gruppo 'brand' (accent, on-accent, accent-text, accent-tint) cambia per cliente da brands/<cliente>/brand.json; tutto il resto e fisso. I valori accent qui sono SEGNAPOSTO neutri. Verifica: python3 .claude/skills/replica-design/contrast.py replica/design/tokens.json",
+  "color": {
+    "light": {
+      "bg": "#f5f5f7",
+      "surface": "#ffffff",
+      "fill": "#ebebf0",
+      "border": "#e2e2e7",
+      "border-input": "#86868c",
+      "text": "#1c1c1e",
+      "text-muted": "#5f5f66",
+      "accent": "#2f52b8",
+      "on-accent": "#ffffff",
+      "accent-text": "#2f52b8",
+      "accent-tint": "#e8edfa",
+      "danger": "#c4001a",
+      "on-danger": "#ffffff",
+      "danger-tint": "#fde8ea",
+      "success": "#1b7a3a",
+      "success-tint": "#e3f3e8",
+      "warning": "#975400",
+      "warning-tint": "#fdf0dc",
+      "staff-1-bg": "#e3eefc",
+      "staff-1-ink": "#0b4f9c",
+      "staff-2-bg": "#e2f4e6",
+      "staff-2-ink": "#1d6b33",
+      "staff-3-bg": "#fdecd9",
+      "staff-3-ink": "#8a4300",
+      "staff-4-bg": "#efe6fb",
+      "staff-4-ink": "#5b2a9c",
+      "staff-5-bg": "#fbe4ee",
+      "staff-5-ink": "#9c1c55",
+      "staff-6-bg": "#dcf3f1",
+      "staff-6-ink": "#0f6660"
+    },
+    "dark": {
+      "bg": "#000000",
+      "surface": "#1c1c1e",
+      "fill": "#2c2c2e",
+      "border": "#38383a",
+      "border-input": "#8e8e93",
+      "text": "#f5f5f7",
+      "text-muted": "#a1a1a8",
+      "accent": "#6f93ff",
+      "on-accent": "#0b0b0d",
+      "accent-text": "#8eaaff",
+      "accent-tint": "#1b2540",
+      "danger": "#ff6b61",
+      "on-danger": "#0b0b0d",
+      "danger-tint": "#3a1714",
+      "success": "#3ad26a",
+      "success-tint": "#11301b",
+      "warning": "#ffb340",
+      "warning-tint": "#3a2a10",
+      "staff-1-bg": "#13263d",
+      "staff-1-ink": "#9cc7ff",
+      "staff-2-bg": "#14301c",
+      "staff-2-ink": "#8fe0a5",
+      "staff-3-bg": "#3a2610",
+      "staff-3-ink": "#ffc27a",
+      "staff-4-bg": "#2a1d3f",
+      "staff-4-ink": "#cfb2ff",
+      "staff-5-bg": "#3b1627",
+      "staff-5-ink": "#ffa3c8",
+      "staff-6-bg": "#0f2f2c",
+      "staff-6-ink": "#84e1d8"
+    }
+  },
+  "pairs": [
+    [
+      "light-text",
+      "light-bg"
+    ],
+    [
+      "light-text",
+      "light-surface"
+    ],
+    [
+      "light-text",
+      "light-fill"
+    ],
+    [
+      "light-text-muted",
+      "light-bg"
+    ],
+    [
+      "light-text-muted",
+      "light-surface"
+    ],
+    [
+      "light-text-muted",
+      "light-fill"
+    ],
+    [
+      "light-on-accent",
+      "light-accent"
+    ],
+    [
+      "light-accent-text",
+      "light-surface"
+    ],
+    [
+      "light-accent-text",
+      "light-bg"
+    ],
+    [
+      "light-accent-text",
+      "light-accent-tint"
+    ],
+    [
+      "light-text",
+      "light-accent-tint"
+    ],
+    [
+      "light-on-danger",
+      "light-danger"
+    ],
+    [
+      "light-danger",
+      "light-surface"
+    ],
+    [
+      "light-danger",
+      "light-danger-tint"
+    ],
+    [
+      "light-success",
+      "light-surface"
+    ],
+    [
+      "light-success",
+      "light-success-tint"
+    ],
+    [
+      "light-warning",
+      "light-surface"
+    ],
+    [
+      "light-warning",
+      "light-warning-tint"
+    ],
+    [
+      "light-staff-1-ink",
+      "light-staff-1-bg"
+    ],
+    [
+      "light-staff-2-ink",
+      "light-staff-2-bg"
+    ],
+    [
+      "light-staff-3-ink",
+      "light-staff-3-bg"
+    ],
+    [
+      "light-staff-4-ink",
+      "light-staff-4-bg"
+    ],
+    [
+      "light-staff-5-ink",
+      "light-staff-5-bg"
+    ],
+    [
+      "light-staff-6-ink",
+      "light-staff-6-bg"
+    ],
+    [
+      "light-border-input",
+      "light-surface",
+      "ui"
+    ],
+    [
+      "light-border-input",
+      "light-bg",
+      "ui"
+    ],
+    [
+      "light-accent",
+      "light-surface",
+      "ui"
+    ],
+    [
+      "light-accent",
+      "light-bg",
+      "ui"
+    ],
+    [
+      "dark-text",
+      "dark-bg"
+    ],
+    [
+      "dark-text",
+      "dark-surface"
+    ],
+    [
+      "dark-text",
+      "dark-fill"
+    ],
+    [
+      "dark-text-muted",
+      "dark-bg"
+    ],
+    [
+      "dark-text-muted",
+      "dark-surface"
+    ],
+    [
+      "dark-text-muted",
+      "dark-fill"
+    ],
+    [
+      "dark-on-accent",
+      "dark-accent"
+    ],
+    [
+      "dark-accent-text",
+      "dark-surface"
+    ],
+    [
+      "dark-accent-text",
+      "dark-bg"
+    ],
+    [
+      "dark-accent-text",
+      "dark-accent-tint"
+    ],
+    [
+      "dark-text",
+      "dark-accent-tint"
+    ],
+    [
+      "dark-on-danger",
+      "dark-danger"
+    ],
+    [
+      "dark-danger",
+      "dark-surface"
+    ],
+    [
+      "dark-danger",
+      "dark-danger-tint"
+    ],
+    [
+      "dark-success",
+      "dark-surface"
+    ],
+    [
+      "dark-success",
+      "dark-success-tint"
+    ],
+    [
+      "dark-warning",
+      "dark-surface"
+    ],
+    [
+      "dark-warning",
+      "dark-warning-tint"
+    ],
+    [
+      "dark-staff-1-ink",
+      "dark-staff-1-bg"
+    ],
+    [
+      "dark-staff-2-ink",
+      "dark-staff-2-bg"
+    ],
+    [
+      "dark-staff-3-ink",
+      "dark-staff-3-bg"
+    ],
+    [
+      "dark-staff-4-ink",
+      "dark-staff-4-bg"
+    ],
+    [
+      "dark-staff-5-ink",
+      "dark-staff-5-bg"
+    ],
+    [
+      "dark-staff-6-ink",
+      "dark-staff-6-bg"
+    ],
+    [
+      "dark-border-input",
+      "dark-surface",
+      "ui"
+    ],
+    [
+      "dark-border-input",
+      "dark-bg",
+      "ui"
+    ],
+    [
+      "dark-accent",
+      "dark-surface",
+      "ui"
+    ],
+    [
+      "dark-accent",
+      "dark-bg",
+      "ui"
+    ]
+  ],
+  "brand": {
+    "_about": "Gli unici token che cambiano per cliente. brand.json da solo il colore 'accent' (e opzionalmente 'accentDark'); gli altri si derivano: on-accent = bianco o quasi-nero, quello con piu contrasto; accent-text = accent scurito (chiaro) o schiarito (scuro) finche non fa 4.5:1 su surface e bg; accent-tint = accent al 10% su surface. La build fallisce se un brand non passa contrast.py.",
+    "overridable": [
+      "accent",
+      "on-accent",
+      "accent-text",
+      "accent-tint"
+    ]
+  },
+  "material": {
+    "_about": "Superfici traslucide (apple-design §12). Native: expo-blur BlurView; web: backdrop-filter. Con 'riduci trasparenza' diventano 'surface' piene.",
+    "light": {
+      "chrome": {
+        "bg": "rgba(255,255,255,0.72)",
+        "blur": 20,
+        "saturate": 1.8,
+        "edge": "rgba(0,0,0,0.08)"
+      },
+      "sheet": {
+        "bg": "rgba(255,255,255,0.86)",
+        "blur": 30,
+        "saturate": 1.8
+      },
+      "scrim": "rgba(0,0,0,0.32)"
+    },
+    "dark": {
+      "chrome": {
+        "bg": "rgba(28,28,30,0.72)",
+        "blur": 20,
+        "saturate": 1.8,
+        "edge": "rgba(255,255,255,0.10)"
+      },
+      "sheet": {
+        "bg": "rgba(28,28,30,0.86)",
+        "blur": 30,
+        "saturate": 1.8
+      },
+      "scrim": "rgba(0,0,0,0.48)"
+    },
+    "photoOverlay": {
+      "_about": "testo sopra foto (copertina del salone): sempre #ffffff su questa sfumatura, in entrambi i temi",
+      "gradient": "rgba(0,0,0,0) -> rgba(0,0,0,0.55), dal 40% dell'altezza in giu",
+      "text": "#ffffff"
+    }
+  },
+  "font": {
+    "_about": "Font di sistema (apple-design §15): SF Pro su iOS e Mac, Roboto su Android, Segoe UI su Windows. Nessun font da licenziare. Numeri tabulari per orari e prezzi.",
+    "sans": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    "mono": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+    "numeric": "tabular-nums"
+  },
+  "type": {
+    "_about": "Scala in pt (RN) = px (web). tracking in em: negativo sui titoli grandi, ~0 sul corpo, leggermente positivo sul piccolo. Su iOS il font di sistema applica gia il suo tracking ottico: li si usa tracking 0 (da verificare a occhio sul prototipo).",
+    "caption": {
+      "size": 12,
+      "line": 16,
+      "weight": 400,
+      "tracking": 0.01
+    },
+    "footnote": {
+      "size": 13,
+      "line": 18,
+      "weight": 400,
+      "tracking": 0.005
+    },
+    "subhead": {
+      "size": 15,
+      "line": 20,
+      "weight": 400,
+      "tracking": 0
+    },
+    "body": {
+      "size": 17,
+      "line": 22,
+      "weight": 400,
+      "tracking": 0
+    },
+    "headline": {
+      "size": 17,
+      "line": 22,
+      "weight": 600,
+      "tracking": 0
+    },
+    "title3": {
+      "size": 20,
+      "line": 25,
+      "weight": 600,
+      "tracking": -0.005
+    },
+    "title2": {
+      "size": 22,
+      "line": 28,
+      "weight": 700,
+      "tracking": -0.01
+    },
+    "title1": {
+      "size": 28,
+      "line": 34,
+      "weight": 700,
+      "tracking": -0.015
+    },
+    "largeTitle": {
+      "size": 34,
+      "line": 41,
+      "weight": 700,
+      "tracking": -0.02
+    },
+    "display": {
+      "size": 48,
+      "line": 52,
+      "weight": 700,
+      "tracking": -0.025
+    }
+  },
+  "space": [
+    0,
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    32,
+    40,
+    48,
+    64
+  ],
+  "radius": {
+    "_about": "Su iOS usare borderCurve: 'continuous' (angoli 'squircle' come il sistema).",
+    "xs": 6,
+    "sm": 10,
+    "md": 14,
+    "lg": 20,
+    "xl": 28,
+    "pill": 999
+  },
+  "shadow": {
+    "_about": "RN 0.76+ supporta boxShadow su iOS, Android e web. Superfici piu grandi = ombra piu profonda.",
+    "card": "0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06)",
+    "pop": "0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06)",
+    "sheet": "0 -4px 32px rgba(0,0,0,0.16)",
+    "lift": "0 12px 32px rgba(0,0,0,0.20)"
+  },
+  "motion": {
+    "_about": "Molle (apple-design §4). Reanimated withSpring({dampingRatio, duration}). 'duration' di Reanimated e un tempo percettivo, non la 'response' di Apple: i valori sono un punto di partenza da tarare sul dispositivo. Rimbalzo SOLO dopo un gesto con slancio.",
+    "spring": {
+      "default": {
+        "dampingRatio": 1.0,
+        "duration": 400,
+        "use": "spostamenti, cambi di layout, comparse"
+      },
+      "snappy": {
+        "dampingRatio": 1.0,
+        "duration": 300,
+        "use": "selezioni, toggle, chip"
+      },
+      "sheet": {
+        "dampingRatio": 0.85,
+        "duration": 350,
+        "use": "pannelli dal basso, dopo un trascinamento"
+      },
+      "momentum": {
+        "dampingRatio": 0.8,
+        "duration": 400,
+        "use": "rilascio dopo un flick o un drag (agenda)"
+      }
+    },
+    "press": {
+      "scale": 0.97,
+      "inMs": 0,
+      "outSpring": "snappy",
+      "use": "feedback alla PRESSIONE, non al rilascio"
+    },
+    "reduced": {
+      "crossfadeMs": 200,
+      "use": "con 'riduci movimento': dissolvenza, niente scorrimenti o rimbalzi"
+    },
+    "projection": {
+      "decelerationRate": 0.998,
+      "use": "proiezione del punto di arrivo dopo un flick (apple-design §6)"
+    },
+    "dragThreshold": 10,
+    "rubberbandConstant": 0.55
+  },
+  "haptics": {
+    "_about": "expo-haptics, solo nei momenti che contano (apple-design §13), sullo stesso frame dell'animazione.",
+    "select": "selectionAsync: scelta di slot, servizio, operatore",
+    "success": "notificationAsync(Success): prenotazione confermata",
+    "warning": "notificationAsync(Warning): slot appena preso da un altro",
+    "pickup": "impactAsync(Light): presa di un appuntamento in agenda",
+    "drop": "impactAsync(Medium): appuntamento rilasciato su un nuovo orario"
+  },
+  "layout": {
+    "breakpoints": {
+      "compact": 0,
+      "regular": 600,
+      "wide": 1024
+    },
+    "gutter": {
+      "compact": 16,
+      "regular": 20,
+      "wide": 24
+    },
+    "maxContent": 1200,
+    "sidebar": 248,
+    "tabBar": 49,
+    "navBar": 44,
+    "minTouch": 44,
+    "agenda": {
+      "hourHeight": 64,
+      "snapMin": 5,
+      "staffColumnMin": 160,
+      "timeGutter": 52
+    }
+  },
+  "icon": {
+    "set": "lucide (MIT): lucide-react-native / lucide-react",
+    "size": {
+      "sm": 16,
+      "md": 20,
+      "lg": 24
+    },
+    "stroke": 1.75
+  }
+}

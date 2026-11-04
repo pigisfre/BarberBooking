@@ -1,0 +1,62 @@
+{
+  "_about": "Configurazione di UN cliente (un barbiere). Copia questa cartella in brands/<id>/ e compila. NIENTE segreti qui: le chiavi private (service role, WhatsApp, Resend, SMS) vanno nei segreti di Supabase/EAS/Vercel. Verifica i colori con: python3 replica/design/build_tokens.py --brand brands/<id>/brand.json --out build/<id>",
+
+  "id": "barberia-esempio",
+  "salonName": "Barberia Esempio",
+
+  "apps": {
+    "client":   {"name": "Barberia Esempio", "iosBundleId": "it.barberiaesempio.app", "androidPackage": "it.barberiaesempio.app", "scheme": "barberiaesempio"},
+    "business": {"name": "Esempio Gestionale", "iosBundleId": "it.barberiaesempio.gestionale", "androidPackage": "it.barberiaesempio.gestionale", "scheme": "barberiaesempio-gest"}
+  },
+
+  "web": {
+    "bookingDomain": "prenota.barberiaesempio.it",
+    "businessDomain": "gestionale.barberiaesempio.it"
+  },
+
+  "theme": {
+    "accent": "#2f52b8",
+    "accentDark": null,
+    "appearance": "system"
+  },
+
+  "assets": {
+    "logo": "assets/logo.svg",
+    "logoMono": "assets/logo-mono.svg",
+    "appIcon": "assets/icon-1024.png",
+    "splash": "assets/splash.png",
+    "favicon": "assets/favicon.png",
+    "ogImage": "assets/og-1200x630.png"
+  },
+
+  "backend": {
+    "supabaseUrl": "https://<project-ref>.supabase.co",
+    "supabaseAnonKey": "<chiave anon pubblica>",
+    "sentryDsn": null
+  },
+
+  "legal": {
+    "businessName": "Ragione sociale del barbiere",
+    "vatNumber": "IT00000000000",
+    "address": "Via Esempio 1, 00000 Citta",
+    "privacyUrl": "https://prenota.barberiaesempio.it/privacy",
+    "termsUrl": "https://prenota.barberiaesempio.it/termini",
+    "supportEmail": "info@barberiaesempio.it"
+  },
+
+  "features": {
+    "multiStaff": true,
+    "whatsappReminders": true,
+    "onlineDeposits": false,
+    "cash": false,
+    "inventory": false,
+    "marketing": false,
+    "loyalty": false,
+    "waitlist": false
+  },
+
+  "stores": {
+    "appleTeamId": "<team id dell'account Apple Developer DEL BARBIERE>",
+    "googlePlayAccount": "<account Play Console DEL BARBIERE>"
+  }
+}

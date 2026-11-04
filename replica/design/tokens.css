@@ -1,0 +1,102 @@
+/* Generato da build_tokens.py: non modificare a mano. Colori come canali RGB per Tailwind/NativeWind. */
+
+:root {
+  --color-bg: 245 245 247;
+  --color-surface: 255 255 255;
+  --color-fill: 235 235 240;
+  --color-border: 226 226 231;
+  --color-border-input: 134 134 140;
+  --color-text: 28 28 30;
+  --color-text-muted: 95 95 102;
+  --color-accent: 47 82 184;
+  --color-on-accent: 255 255 255;
+  --color-accent-text: 47 82 184;
+  --color-accent-tint: 232 237 250;
+  --color-danger: 196 0 26;
+  --color-on-danger: 255 255 255;
+  --color-danger-tint: 253 232 234;
+  --color-success: 27 122 58;
+  --color-success-tint: 227 243 232;
+  --color-warning: 151 84 0;
+  --color-warning-tint: 253 240 220;
+  --color-staff-1-bg: 227 238 252;
+  --color-staff-1-ink: 11 79 156;
+  --color-staff-2-bg: 226 244 230;
+  --color-staff-2-ink: 29 107 51;
+  --color-staff-3-bg: 253 236 217;
+  --color-staff-3-ink: 138 67 0;
+  --color-staff-4-bg: 239 230 251;
+  --color-staff-4-ink: 91 42 156;
+  --color-staff-5-bg: 251 228 238;
+  --color-staff-5-ink: 156 28 85;
+  --color-staff-6-bg: 220 243 241;
+  --color-staff-6-ink: 15 102 96;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: 0 0 0;
+    --color-surface: 28 28 30;
+    --color-fill: 44 44 46;
+    --color-border: 56 56 58;
+    --color-border-input: 142 142 147;
+    --color-text: 245 245 247;
+    --color-text-muted: 161 161 168;
+    --color-accent: 111 147 255;
+    --color-on-accent: 11 11 13;
+    --color-accent-text: 142 170 255;
+    --color-accent-tint: 27 37 64;
+    --color-danger: 255 107 97;
+    --color-on-danger: 11 11 13;
+    --color-danger-tint: 58 23 20;
+    --color-success: 58 210 106;
+    --color-success-tint: 17 48 27;
+    --color-warning: 255 179 64;
+    --color-warning-tint: 58 42 16;
+    --color-staff-1-bg: 19 38 61;
+    --color-staff-1-ink: 156 199 255;
+    --color-staff-2-bg: 20 48 28;
+    --color-staff-2-ink: 143 224 165;
+    --color-staff-3-bg: 58 38 16;
+    --color-staff-3-ink: 255 194 122;
+    --color-staff-4-bg: 42 29 63;
+    --color-staff-4-ink: 207 178 255;
+    --color-staff-5-bg: 59 22 39;
+    --color-staff-5-ink: 255 163 200;
+    --color-staff-6-bg: 15 47 44;
+    --color-staff-6-ink: 132 225 216;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: 0 0 0;
+  --color-surface: 28 28 30;
+  --color-fill: 44 44 46;
+  --color-border: 56 56 58;
+  --color-border-input: 142 142 147;
+  --color-text: 245 245 247;
+  --color-text-muted: 161 161 168;
+  --color-accent: 111 147 255;
+  --color-on-accent: 11 11 13;
+  --color-accent-text: 142 170 255;
+  --color-accent-tint: 27 37 64;
+  --color-danger: 255 107 97;
+  --color-on-danger: 11 11 13;
+  --color-danger-tint: 58 23 20;
+  --color-success: 58 210 106;
+  --color-success-tint: 17 48 27;
+  --color-warning: 255 179 64;
+  --color-warning-tint: 58 42 16;
+  --color-staff-1-bg: 19 38 61;
+  --color-staff-1-ink: 156 199 255;
+  --color-staff-2-bg: 20 48 28;
+  --color-staff-2-ink: 143 224 165;
+  --color-staff-3-bg: 58 38 16;
+  --color-staff-3-ink: 255 194 122;
+  --color-staff-4-bg: 42 29 63;
+  --color-staff-4-ink: 207 178 255;
+  --color-staff-5-bg: 59 22 39;
+  --color-staff-5-ink: 255 163 200;
+  --color-staff-6-bg: 15 47 44;
+  --color-staff-6-ink: 132 225 216;
+}
