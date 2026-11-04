@@ -1,14 +1,12 @@
 -- BarberBooking: schema MVP (Supabase / Postgres 15+)
--- Multi-tenant: ogni riga di un salone ha tenant_id. Accesso con Row Level Security.
--- Tempi sempre timestamptz (UTC). Soldi sempre in centesimi interi + currency.
+-- SINGLE-TENANT: ogni installazione (un progetto Supabase) serve UN solo salone,
+-- personalizzato per quel barbiere. Niente tenant_id: il salone e la riga unica di `salon`.
+-- Accesso con Row Level Security. Tempi sempre timestamptz (UTC). Soldi in centesimi interi.
 -- Le tabelle della fase 2 (cassa, magazzino, marketing, fidelity, coda) sono in fondo, commentate.
 
 create extension if not exists btree_gist;
 create extension if not exists citext;
 
--- ---------------------------------------------------------------------------
--- helpers
--- ---------------------------------------------------------------------------
 create or replace function set_updated_at() returns trigger
 language plpgsql as $$
 begin
@@ -17,7 +15,7 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- piattaforma
+-- persone
 -- ---------------------------------------------------------------------------
 
 -- utente dell'app (cliente o staff): 1-1 con auth.users di Supabase
@@ -27,19 +25,32 @@ create table profiles (
   phone text unique,                       -- E.164, verificato con OTP
   email citext unique,
   locale text not null default 'it',
-  marketing_opt_in boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create table platform_admins (
+-- chi entra nel gestionale e con quale ruolo
+create table staff_users (
   user_id uuid primary key references profiles(id) on delete cascade,
+  role text not null check (role in ('owner','admin','staff')),
   created_at timestamptz not null default now()
 );
 
-create table tenants (
-  id uuid primary key default gen_random_uuid(),
-  slug citext not null unique check (slug ~ '^[a-z0-9-]{3,40}$'),
+create or replace function is_staff() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from staff_users where user_id = auth.uid())
+$$;
+
+create or replace function has_role(roles text[]) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from staff_users where user_id = auth.uid() and role = any(roles))
+$$;
+
+-- ---------------------------------------------------------------------------
+-- il salone (riga unica)
+-- ---------------------------------------------------------------------------
+create table salon (
+  id boolean primary key default true check (id),   -- impone una sola riga
   name text not null check (char_length(name) between 2 and 80),
   phone text,
   email citext,
@@ -54,6 +65,7 @@ create table tenants (
   logo_path text,
   cover_path text,
   description text,
+  instagram_url text,
   -- regole prenotazione online (S32)
   booking_enabled boolean not null default true,
   slot_interval_min int not null default 15 check (slot_interval_min in (5,10,15,20,30,60)),
@@ -61,62 +73,18 @@ create table tenants (
   max_advance_days int not null default 60 check (max_advance_days between 1 and 365),
   cancel_window_min int not null default 120 check (cancel_window_min >= 0),
   requires_approval boolean not null default false,
-  reminder_hour smallint not null default 18 check (reminder_hour between 0 and 23), -- ora locale del promemoria serale (F05)
-  -- abbonamento SaaS (F12)
-  plan text not null default 'trial' check (plan in ('trial','base','pro')),
-  status text not null default 'trialing'
-    check (status in ('trialing','active','past_due','read_only','suspended','deleted')),
-  trial_ends_at timestamptz not null default (now() + interval '30 days'),
-  stripe_customer_id text unique,
-  stripe_subscription_id text unique,
-  created_at timestamptz not null default now(),
+  reminder_hour smallint not null default 18 check (reminder_hour between 0 and 23), -- ora locale promemoria serale (F05)
   updated_at timestamptz not null default now()
 );
-create index tenants_city_idx on tenants (city);
-create index tenants_status_idx on tenants (status);
-
--- chi lavora nel salone e con quale ruolo (accesso al gestionale)
-create table memberships (
-  id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
-  user_id uuid not null references profiles(id) on delete cascade,
-  role text not null check (role in ('owner','admin','staff')),
-  created_at timestamptz not null default now(),
-  unique (tenant_id, user_id)
-);
-create index memberships_user_idx on memberships (user_id);
-
-create or replace function is_member(t uuid) returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from memberships where tenant_id = t and user_id = auth.uid())
-$$;
-
-create or replace function has_role(t uuid, roles text[]) returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from memberships
-                 where tenant_id = t and user_id = auth.uid() and role = any(roles))
-$$;
-
-create or replace function is_platform_admin() returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from platform_admins where user_id = auth.uid())
-$$;
-
-create or replace function tenant_is_public(t uuid) returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from tenants where id = t
-                 and status in ('trialing','active','past_due') and booking_enabled)
-$$;
 
 -- ---------------------------------------------------------------------------
--- salone: staff, servizi, orari
+-- staff, servizi, orari
 -- ---------------------------------------------------------------------------
 
 -- operatore visibile in agenda e ai clienti (puo non avere un login)
 create table staff_members (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
-  membership_id uuid unique references memberships(id) on delete set null,
+  user_id uuid unique references staff_users(user_id) on delete set null,
   display_name text not null,
   avatar_path text,
   color text,                              -- colore della colonna in agenda
@@ -126,20 +94,17 @@ create table staff_members (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index staff_members_tenant_idx on staff_members (tenant_id, sort_order);
+create index staff_members_sort_idx on staff_members (sort_order);
 
 create table service_categories (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
   name text not null,
   sort_order int not null default 0,
   created_at timestamptz not null default now()
 );
-create index service_categories_tenant_idx on service_categories (tenant_id);
 
 create table services (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
   category_id uuid references service_categories(id) on delete set null,
   name text not null check (char_length(name) between 1 and 80),
   description text,
@@ -152,37 +117,32 @@ create table services (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index services_tenant_idx on services (tenant_id, sort_order);
+create index services_sort_idx on services (sort_order);
 create index services_category_idx on services (category_id);
 
 -- quali operatori fanno quale servizio
 create table service_staff (
   service_id uuid not null references services(id) on delete cascade,
   staff_id uuid not null references staff_members(id) on delete cascade,
-  tenant_id uuid not null references tenants(id) on delete cascade,
   primary key (service_id, staff_id)
 );
 create index service_staff_staff_idx on service_staff (staff_id);
-create index service_staff_tenant_idx on service_staff (tenant_id);
 
--- orari settimanali: del salone (staff_id null) o del singolo operatore
--- ora locale del salone (tenants.timezone), non UTC: e una regola, non un istante
+-- orari settimanali: del salone (staff_id null) o del singolo operatore.
+-- ora locale del salone (salon.timezone), non UTC: e una regola, non un istante
 create table working_hours (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
   staff_id uuid references staff_members(id) on delete cascade,
   weekday smallint not null check (weekday between 1 and 7),  -- ISO: 1 = lunedi
   opens time not null,
   closes time not null,
   check (closes > opens)
 );
-create index working_hours_tenant_idx on working_hours (tenant_id, weekday);
 create index working_hours_staff_idx on working_hours (staff_id, weekday);
 
 -- indisponibilita: chiusure del salone (staff_id null), pause, ferie
 create table time_blocks (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
   staff_id uuid references staff_members(id) on delete cascade,
   start_at timestamptz not null,
   end_at timestamptz not null,
@@ -193,19 +153,18 @@ create table time_blocks (
   check (end_at > start_at)
 );
 create index time_blocks_staff_idx on time_blocks (staff_id, start_at);
-create index time_blocks_tenant_idx on time_blocks (tenant_id, start_at);
+create index time_blocks_start_idx on time_blocks (start_at);
 
 -- ---------------------------------------------------------------------------
 -- clienti e appuntamenti
 -- ---------------------------------------------------------------------------
 
--- cliente DEL SALONE (rubrica). profile_id se ha l'app; null se inserito a mano
+-- scheda cliente del salone. profile_id se ha l'app; null se inserito a mano dal barbiere
 create table customers (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
-  profile_id uuid references profiles(id) on delete set null,
+  profile_id uuid unique references profiles(id) on delete set null,
   full_name text not null,
-  phone text,
+  phone text unique,
   email citext,
   birthday date,
   notes text,
@@ -213,16 +172,12 @@ create table customers (
   marketing_consent_at timestamptz,
   no_show_count int not null default 0,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (tenant_id, profile_id),
-  unique (tenant_id, phone)
+  updated_at timestamptz not null default now()
 );
-create index customers_tenant_name_idx on customers (tenant_id, full_name);
-create index customers_profile_idx on customers (profile_id);
+create index customers_name_idx on customers (full_name);
 
 create table appointments (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
   customer_id uuid not null references customers(id) on delete restrict,
   staff_id uuid not null references staff_members(id) on delete restrict,
   start_at timestamptz not null,
@@ -248,7 +203,7 @@ create table appointments (
     tstzrange(start_at, end_at, '[)') with &&
   ) where (status in ('pending','confirmed'))
 );
-create index appointments_tenant_start_idx on appointments (tenant_id, start_at);
+create index appointments_start_idx on appointments (start_at);
 create index appointments_staff_start_idx on appointments (staff_id, start_at);
 create index appointments_customer_idx on appointments (customer_id, start_at desc);
 create index appointments_reminder_idx on appointments (start_at)
@@ -258,7 +213,6 @@ create index appointments_reminder_idx on appointments (start_at)
 create table appointment_services (
   id uuid primary key default gen_random_uuid(),
   appointment_id uuid not null references appointments(id) on delete cascade,
-  tenant_id uuid not null references tenants(id) on delete cascade,
   service_id uuid references services(id) on delete set null,
   name text not null,
   duration_min int not null check (duration_min > 0),
@@ -284,7 +238,6 @@ create index push_tokens_user_idx on push_tokens (user_id);
 
 create table message_log (
   id uuid primary key default gen_random_uuid(),
-  tenant_id uuid not null references tenants(id) on delete cascade,
   appointment_id uuid references appointments(id) on delete set null,
   customer_id uuid references customers(id) on delete set null,
   channel text not null check (channel in ('whatsapp','sms','email','push')),
@@ -293,16 +246,14 @@ create table message_log (
     check (status in ('queued','sent','delivered','read','failed')),
   provider_message_id text unique,
   error text,
-  cost_cents int,                          -- per fatturare i messaggi (S54)
+  cost_cents int,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create index message_log_tenant_idx on message_log (tenant_id, created_at desc);
+create index message_log_created_idx on message_log (created_at desc);
 create index message_log_appt_idx on message_log (appointment_id);
 
--- ---------------------------------------------------------------------------
 -- webhook in arrivo: idempotenza (Stripe e Meta ritentano)
--- ---------------------------------------------------------------------------
 create table webhook_events (
   provider text not null check (provider in ('stripe','whatsapp')),
   event_id text not null,
@@ -311,11 +262,8 @@ create table webhook_events (
   primary key (provider, event_id)
 );
 
--- ---------------------------------------------------------------------------
--- updated_at triggers
--- ---------------------------------------------------------------------------
 create trigger t_profiles_upd before update on profiles for each row execute function set_updated_at();
-create trigger t_tenants_upd before update on tenants for each row execute function set_updated_at();
+create trigger t_salon_upd before update on salon for each row execute function set_updated_at();
 create trigger t_staff_upd before update on staff_members for each row execute function set_updated_at();
 create trigger t_services_upd before update on services for each row execute function set_updated_at();
 create trigger t_customers_upd before update on customers for each row execute function set_updated_at();
@@ -326,19 +274,18 @@ create trigger t_message_log_upd before update on message_log for each row execu
 -- prenotazione atomica (F01, F02, F07): unica porta d'ingresso per creare appuntamenti
 -- ---------------------------------------------------------------------------
 create or replace function book_appointment(
-  p_tenant_id uuid,
   p_staff_id uuid,
   p_service_ids uuid[],
   p_start_at timestamptz,
-  p_customer_id uuid,          -- null = cliente app: usa/crea il customer del profilo
+  p_customer_id uuid,          -- null = cliente app: usa/crea la scheda del suo profilo
   p_source text,
   p_note text,
   p_idempotency_key uuid
 ) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
-  v_tenant tenants;
-  v_is_staff boolean := is_member(p_tenant_id);
+  v_salon salon;
+  v_is_staff boolean := is_staff();
   v_customer uuid := p_customer_id;
   v_duration int;
   v_total int;
@@ -348,25 +295,34 @@ begin
   select id into v_id from appointments where idempotency_key = p_idempotency_key;
   if v_id is not null then return v_id; end if;
 
-  select * into v_tenant from tenants where id = p_tenant_id;
-  if v_tenant.id is null then raise exception 'tenant_not_found'; end if;
+  select * into v_salon from salon limit 1;
+  if v_salon.id is null then raise exception 'salon_not_configured'; end if;
 
   if not v_is_staff then
     if auth.uid() is null then raise exception 'auth_required'; end if;
-    if not tenant_is_public(p_tenant_id) then raise exception 'booking_closed'; end if;
+    if not v_salon.booking_enabled then raise exception 'booking_closed'; end if;
     if p_source = 'staff' then raise exception 'forbidden'; end if;
-    if p_start_at < now() + make_interval(mins => v_tenant.min_notice_min) then
+    if p_start_at < now() + make_interval(mins => v_salon.min_notice_min) then
       raise exception 'too_late';
     end if;
-    if p_start_at > now() + make_interval(days => v_tenant.max_advance_days) then
+    if p_start_at > now() + make_interval(days => v_salon.max_advance_days) then
       raise exception 'too_far';
     end if;
-    -- il cliente app prenota sempre per se stesso
-    insert into customers (tenant_id, profile_id, full_name, phone, email)
-      select p_tenant_id, p.id, coalesce(p.full_name, 'Cliente'), p.phone, p.email
-      from profiles p where p.id = auth.uid()
-    on conflict (tenant_id, profile_id) do update set updated_at = now()
-    returning id into v_customer;
+    -- il cliente app prenota sempre per se stesso; se il barbiere lo aveva gia in rubrica
+    -- con lo stesso telefono, la scheda viene collegata al profilo
+    select id into v_customer from customers where profile_id = auth.uid();
+    if v_customer is null then
+      update customers c set profile_id = p.id
+        from profiles p
+       where p.id = auth.uid() and c.phone = p.phone and c.profile_id is null
+      returning c.id into v_customer;
+    end if;
+    if v_customer is null then
+      insert into customers (profile_id, full_name, phone, email)
+        select p.id, coalesce(p.full_name, 'Cliente'), p.phone, p.email
+        from profiles p where p.id = auth.uid()
+      returning id into v_customer;
+    end if;
   elsif v_customer is null then
     raise exception 'customer_required';
   end if;
@@ -375,12 +331,11 @@ begin
   select sum(s.duration_min), sum(s.price_cents) into v_duration, v_total
   from services s
   join service_staff ss on ss.service_id = s.id and ss.staff_id = p_staff_id
-  where s.id = any(p_service_ids) and s.tenant_id = p_tenant_id and s.active
-    and (v_is_staff or s.bookable_online);
-  if v_duration is null
-     or (select count(*) from services s
-         join service_staff ss on ss.service_id = s.id and ss.staff_id = p_staff_id
-         where s.id = any(p_service_ids)) <> cardinality(p_service_ids) then
+  where s.id = any(p_service_ids) and s.active and (v_is_staff or s.bookable_online);
+  if v_duration is null or (select count(*) from services s
+        join service_staff ss on ss.service_id = s.id and ss.staff_id = p_staff_id
+        where s.id = any(p_service_ids) and s.active and (v_is_staff or s.bookable_online))
+        <> cardinality(p_service_ids) then
     raise exception 'invalid_services';
   end if;
   v_end := p_start_at + make_interval(mins => v_duration);
@@ -388,38 +343,35 @@ begin
   -- serializza le prenotazioni per operatore, poi controlla i blocchi
   perform pg_advisory_xact_lock(hashtextextended(p_staff_id::text, 0));
   if exists (select 1 from time_blocks b
-             where b.tenant_id = p_tenant_id
-               and (b.staff_id = p_staff_id or b.staff_id is null)
+             where (b.staff_id = p_staff_id or b.staff_id is null)
                and tstzrange(b.start_at, b.end_at) && tstzrange(p_start_at, v_end)) then
     raise exception 'slot_unavailable';
   end if;
-  -- l'orario di lavoro lo verifica anche get_available_slots; qui e un controllo di sicurezza
+  -- l'orario di lavoro lo verifica anche fn/availability; qui e un controllo di sicurezza
   if not v_is_staff and not exists (
       select 1 from working_hours w
       where w.staff_id = p_staff_id
-        and w.weekday = extract(isodow from p_start_at at time zone v_tenant.timezone)
-        and (p_start_at at time zone v_tenant.timezone)::time >= w.opens
-        and (v_end at time zone v_tenant.timezone)::time <= w.closes
-        and (p_start_at at time zone v_tenant.timezone)::date
-            = (v_end at time zone v_tenant.timezone)::date) then
+        and w.weekday = extract(isodow from p_start_at at time zone v_salon.timezone)
+        and (p_start_at at time zone v_salon.timezone)::time >= w.opens
+        and (v_end at time zone v_salon.timezone)::time <= w.closes
+        and (p_start_at at time zone v_salon.timezone)::date
+            = (v_end at time zone v_salon.timezone)::date) then
     raise exception 'outside_hours';
   end if;
 
   begin
-    insert into appointments (tenant_id, customer_id, staff_id, start_at, end_at, status,
-                              source, customer_note, total_cents, currency,
-                              idempotency_key, created_by)
-    values (p_tenant_id, v_customer, p_staff_id, p_start_at, v_end,
-            case when not v_is_staff and v_tenant.requires_approval then 'pending' else 'confirmed' end,
-            p_source, p_note, v_total, v_tenant.currency, p_idempotency_key, auth.uid())
+    insert into appointments (customer_id, staff_id, start_at, end_at, status, source,
+                              customer_note, total_cents, currency, idempotency_key, created_by)
+    values (v_customer, p_staff_id, p_start_at, v_end,
+            case when not v_is_staff and v_salon.requires_approval then 'pending' else 'confirmed' end,
+            p_source, p_note, v_total, v_salon.currency, p_idempotency_key, auth.uid())
     returning id into v_id;
   exception when exclusion_violation then
     raise exception 'slot_unavailable';
   end;
 
-  insert into appointment_services (appointment_id, tenant_id, service_id, name, duration_min, price_cents, position)
-  select v_id, p_tenant_id, s.id, s.name, s.duration_min, s.price_cents,
-         array_position(p_service_ids, s.id)
+  insert into appointment_services (appointment_id, service_id, name, duration_min, price_cents, position)
+  select v_id, s.id, s.name, s.duration_min, s.price_cents, array_position(p_service_ids, s.id)
   from services s where s.id = any(p_service_ids);
 
   return v_id;
@@ -429,9 +381,8 @@ end $$;
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 alter table profiles enable row level security;
-alter table platform_admins enable row level security;
-alter table tenants enable row level security;
-alter table memberships enable row level security;
+alter table staff_users enable row level security;
+alter table salon enable row level security;
 alter table staff_members enable row level security;
 alter table service_categories enable row level security;
 alter table services enable row level security;
@@ -445,74 +396,59 @@ alter table push_tokens enable row level security;
 alter table message_log enable row level security;
 alter table webhook_events enable row level security;  -- nessuna policy: solo service role
 
--- profiles: ognuno il suo; lo staff vede i profili dei propri clienti tramite customers
 create policy profiles_self on profiles for all using (id = auth.uid()) with check (id = auth.uid());
-create policy profiles_admin on profiles for select using (is_platform_admin());
+create policy profiles_staff on profiles for select using (is_staff());
 
-create policy platform_admins_read on platform_admins for select using (is_platform_admin());
+create policy staff_users_read on staff_users for select using (is_staff());
+create policy staff_users_owner on staff_users for all using (has_role(array['owner']))
+  with check (has_role(array['owner']));
 
--- tenants: pubblico in lettura se attivo (campi pubblici serviti dalla view public_tenants);
--- gestione al titolare/admin; console alla piattaforma
-create policy tenants_member_read on tenants for select using (is_member(id) or is_platform_admin());
-create policy tenants_owner_write on tenants for update using (has_role(id, array['owner','admin']))
-  with check (has_role(id, array['owner','admin']));
--- creazione del tenant: edge function signup-tenant (service role), non dal client
+-- il salone e pubblico in lettura (i campi sono tutti pubblici); lo modifica owner/admin
+create policy salon_public on salon for select using (true);
+create policy salon_write on salon for update using (has_role(array['owner','admin']))
+  with check (has_role(array['owner','admin']));
 
-create policy memberships_read on memberships for select using (is_member(tenant_id) or user_id = auth.uid() or is_platform_admin());
-create policy memberships_owner on memberships for all using (has_role(tenant_id, array['owner']))
-  with check (has_role(tenant_id, array['owner']));
+-- catalogo: pubblico in lettura se prenotabile; scrittura owner/admin
+create policy staff_public on staff_members for select using ((active and bookable_online) or is_staff());
+create policy staff_write on staff_members for all using (has_role(array['owner','admin']))
+  with check (has_role(array['owner','admin']));
 
--- dati del catalogo: leggibili da tutti se il salone e pubblico; scrivibili da owner/admin
-create policy staff_public on staff_members for select using (tenant_is_public(tenant_id) and active and bookable_online);
-create policy staff_member on staff_members for select using (is_member(tenant_id));
-create policy staff_write on staff_members for all using (has_role(tenant_id, array['owner','admin']))
-  with check (has_role(tenant_id, array['owner','admin']));
+create policy cats_public on service_categories for select using (true);
+create policy cats_write on service_categories for all using (has_role(array['owner','admin']))
+  with check (has_role(array['owner','admin']));
 
-create policy cats_public on service_categories for select using (tenant_is_public(tenant_id) or is_member(tenant_id));
-create policy cats_write on service_categories for all using (has_role(tenant_id, array['owner','admin']))
-  with check (has_role(tenant_id, array['owner','admin']));
+create policy services_public on services for select using ((active and bookable_online) or is_staff());
+create policy services_write on services for all using (has_role(array['owner','admin']))
+  with check (has_role(array['owner','admin']));
 
-create policy services_public on services for select using ((tenant_is_public(tenant_id) and active and bookable_online) or is_member(tenant_id));
-create policy services_write on services for all using (has_role(tenant_id, array['owner','admin']))
-  with check (has_role(tenant_id, array['owner','admin']));
+create policy service_staff_public on service_staff for select using (true);
+create policy service_staff_write on service_staff for all using (has_role(array['owner','admin']))
+  with check (has_role(array['owner','admin']));
 
-create policy service_staff_public on service_staff for select using (tenant_is_public(tenant_id) or is_member(tenant_id));
-create policy service_staff_write on service_staff for all using (has_role(tenant_id, array['owner','admin']))
-  with check (has_role(tenant_id, array['owner','admin']));
+create policy hours_public on working_hours for select using (true);
+create policy hours_write on working_hours for all using (has_role(array['owner','admin']))
+  with check (has_role(array['owner','admin']));
 
-create policy hours_public on working_hours for select using (tenant_is_public(tenant_id) or is_member(tenant_id));
-create policy hours_write on working_hours for all using (has_role(tenant_id, array['owner','admin']))
-  with check (has_role(tenant_id, array['owner','admin']));
+-- blocchi: solo staff (al pubblico arrivano solo gli slot liberi da fn/availability)
+create policy blocks_staff on time_blocks for all using (is_staff()) with check (is_staff());
 
--- blocchi: lo staff li gestisce; il pubblico non li legge (gli slot arrivano da get_available_slots)
-create policy blocks_member on time_blocks for all using (is_member(tenant_id)) with check (is_member(tenant_id));
-
--- clienti: solo lo staff del salone; il cliente vede la propria riga
-create policy customers_member on customers for all using (is_member(tenant_id)) with check (is_member(tenant_id));
+-- clienti: staff tutto; il cliente vede la propria scheda
+create policy customers_staff on customers for all using (is_staff()) with check (is_staff());
 create policy customers_self on customers for select using (profile_id = auth.uid());
 
--- appuntamenti: staff tutto il salone; cliente solo i propri (creazione solo via book_appointment)
-create policy appts_member on appointments for all using (is_member(tenant_id)) with check (is_member(tenant_id));
+-- appuntamenti: staff tutto; cliente solo i propri (creazione solo via book_appointment)
+create policy appts_staff on appointments for all using (is_staff()) with check (is_staff());
 create policy appts_self on appointments for select using (
   exists (select 1 from customers c where c.id = customer_id and c.profile_id = auth.uid()));
 
-create policy appt_services_member on appointment_services for all using (is_member(tenant_id)) with check (is_member(tenant_id));
+create policy appt_services_staff on appointment_services for all using (is_staff()) with check (is_staff());
 create policy appt_services_self on appointment_services for select using (
   exists (select 1 from appointments a join customers c on c.id = a.customer_id
           where a.id = appointment_id and c.profile_id = auth.uid()));
 
 create policy push_self on push_tokens for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
-create policy msg_member on message_log for select using (is_member(tenant_id) or is_platform_admin());
-
--- vista pubblica del salone: solo i campi da mostrare (niente stripe_*, niente email interne)
-create view public_tenants with (security_invoker = false) as
-  select id, slug, name, phone, address_line, city, postal_code, country, lat, lng,
-         timezone, currency, logo_path, cover_path, description,
-         slot_interval_min, min_notice_min, max_advance_days, cancel_window_min
-  from tenants
-  where status in ('trialing','active','past_due') and booking_enabled;
-grant select on public_tenants to anon, authenticated;
+create policy msg_staff on message_log for select using (is_staff());
 
 -- ---------------------------------------------------------------------------
 -- FASE 2 (non nel MVP): da scrivere come migrazioni successive
@@ -522,5 +458,4 @@ grant select on public_tenants to anon, authenticated;
 -- campaigns, campaign_recipients       marketing (S37)
 -- vouchers, loyalty_accounts, referrals fidelity (S38)
 -- waitlist_entries                     coda (S12, S39)
--- payments + tenants.stripe_account_id acconti con Stripe Connect (S41)
--- locations                            multi-sede
+-- payments + salon.stripe_account_id   acconti online (S41): Stripe sull'account del barbiere

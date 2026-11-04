@@ -3,9 +3,15 @@
 Scope: entrambi i lati del prodotto.
 - **Lato salone (gestionale):** agenda, prenotazioni online, staff, servizi, clienti, cassa, magazzino, analytics, promemoria e marketing, fidelity, pagamenti.
 - **Lato cliente:** app di prenotazione e pagina di prenotazione web.
-- **Aggiunta nostra (non nell'originale):** console centrale della piattaforma SaaS (gestione dei saloni abbonati), perché il prodotto va venduto.
+For: prodotto **white-label venduto a UN singolo barbiere** e personalizzato per lui e per i suoi clienti. Mercato Italia.
 
-For: SaaS da vendere a barbieri e parrucchieri, mercato Italia.
+> **Modello deciso (2026-11-04): single-tenant.** Ogni vendita è un'installazione separata, con il proprio database, le proprie app con nome, logo e colori del barbiere e il proprio dominio. Non è una piattaforma con più saloni. Di conseguenza escono dal perimetro:
+> - la ricerca dei saloni e i preferiti (S03, S13);
+> - la registrazione self-service del salone con prova gratuita (S20 diventa la configurazione iniziale fatta da te);
+> - l'abbonamento SaaS (S42);
+> - la console della piattaforma (S50-S54).
+>
+> La "dashboard centrale" è la home del gestionale del barbiere (S22). Un salone può comunque avere collaboratori, quindi l'agenda resta a colonne per operatore.
 Date: 2026-11-04
 Method: solo fonti pubbliche, lette tramite ricerca web. Le pagine del sito e degli store non si sono potute aprire direttamente (rete dell'ambiente), quindi **non ci sono screenshot di riferimento** in `replica/screens/`. Schermate e layout qui sotto sono **dedotti** dalle funzioni dichiarate e dalle convenzioni della categoria, e marcati come tali. Da completare con screenshot degli store e dei video pubblici.
 
@@ -91,7 +97,7 @@ Tutte le schermate sono *dedotte* (vedi Method).
 | S43 | Vista combinata | toggle da Impostazioni (fonte 4) | agenda + cassa + magazzino in una schermata (tablet/desktop) | split view | |
 | S44 | Impostazioni generali | menu | profilo salone, sedi, ruoli, notifiche | form | |
 
-### Console piattaforma (A, nostra)
+### Console piattaforma (A): FUORI PERIMETRO con il modello single-tenant (tenuta come riferimento)
 
 | ID | screen | purpose |
 | --- | --- | --- |
@@ -233,7 +239,7 @@ Relationships: Tenant 1-n StaffMember, Service, Customer, Appointment, Product, 
 
 ## Feature matrix
 
-Vedi `features.csv`. Must: 31, should: 20, could: 14, skip: 3 (totale 68, di cui 3 aggiunte nostre con `original=no`). Il tool di parity conta 62 righe (esclude skip e aggiunte nostre): 29 must da fare.
+Vedi `features.csv`. Must: 29, should: 20, could: 14, skip: 6 (totale 69, di cui 3 aggiunte nostre con `original=no`: installazione per cliente, build e pubblicazione, dashboard). Il tool di parity conta 60 righe (esclude skip e aggiunte nostre): 27 must da fare.
 
 ## Out of scope (cannot or should not be cloned)
 
